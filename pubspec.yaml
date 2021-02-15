@@ -1,0 +1,17 @@
+name: libdbm
+version: 0.1.0
+description: A minimal KV database for dart.
+homepage: https://www.libdbm.com/
+repository: https://github.com/gtnicol/libdbm
+issue_tracker: https://github.com/gtnicol/libdbm/issues
+
+environment:
+  sdk: ">=2.5.0 <3.0.0"
+
+dependencies:
+
+dev_dependencies:
+  faker: ^1.3.0
+  pedantic: ^1.9.0
+  test: ^1.14.4
+
