@@ -1,3 +1,7 @@
-## [0.0.1] - TODO: Add release date.
+## [0.1.0] - Initial version
 
-* TODO: Describe initial release.
+* Initial release.
+
+## [0.1.1] - Change github repo
+
+* Changed github repo
