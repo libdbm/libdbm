@@ -58,9 +58,9 @@ roughly halve the throughput (i.e. operations will take twice as long);
 
 The database file format has some fixed and dynamic sized overheads. As a general rule, the 
 static overhead is < 1k. The dynamic overhead is whatever size is needed for the hash table and
-memory pool (roughly 16 bytes per entry each), and then a per-record overhead of about 32 bytes.
-As such, the overhead for storing many tiny values will be fairly high, so it is better to aggregate
-such values into a single record. 
+memory pool (roughly 16 bytes per entry each), and then a per-record overhead of about 32 bytes, and
+records are aligned to 128 byte boundaries. As such, the overhead for storing many tiny values will
+be fairly high, so it is better to aggregate such values into a single record.
 
 ## Limitations
 
@@ -69,8 +69,18 @@ transactions and while care has been taken to ensure reliability, the library do
 so in extreme cases, there is a small chance of corruption. The best way to mitigate this
 is to have `flush` turned on. Further tests need to be/will be written to handle bad input etc.
 
-Currently the hash table size is fixed, though the file format supports rehashing/reallocating the
+Currently, the hash table size is fixed, though the file format supports rehashing/reallocating the
 hash table. In the future, this capability will be used to optimize performance automatically.
+
+## Planned Enhancements
+
+* Versioning of values so that `n` previous values will (optionally) be kept. This will probably
+  be done by implementing pointer versioning.
+* Transactions support, which will basically buffer pointer updates and then write out atomically.
+  This will be relatively simple with pointer versioning implemented.
+* Index to support ordered traversal and simple queries. Probably both `btree` and `splay-tree` indexes.
+* `IndexDB` API support.
+* Maybe implement an STM server.
 
 ## Exposed API
 

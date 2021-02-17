@@ -14,5 +14,5 @@ abstract class RecordPool {
   Record get(Uint8List key);
   Record put(Uint8List key, final Uint8List value, bool overwrite);
 
-  Iterator<MapEntry<Uint8List,Uint8List>> entries();
+  Iterator<MapEntry<Uint8List, Uint8List>> entries();
 }

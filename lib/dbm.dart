@@ -1,9 +1,7 @@
-import 'dart:io';
 import 'dart:typed_data';
 
 /// DBM specific exception.
-class DBMException implements Exception
-{
+class DBMException implements Exception {
   final int code;
   final String message;
 
@@ -50,7 +48,7 @@ abstract class DBM {
   Uint8List putIfAbsent(Uint8List key, Uint8List value);
 
   /// Iterate over all keys and values in the database
-  Iterator<MapEntry<Uint8List,Uint8List>> entries();
+  Iterator<MapEntry<Uint8List, Uint8List>> entries();
 
   /// Get the last time the database was opened or modified.
   DateTime modified();

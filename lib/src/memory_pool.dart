@@ -23,8 +23,8 @@ class MemoryPoolHeader extends Block {
   int get magic => data.getUint64(MAGIC_OFFSET);
   set magic(int v) => data.setUint64(MAGIC_OFFSET, v);
 
-  Pointer get page => Pointer(data.getUint64(PAGE_START_OFFSET),
-      data.getUint64(PAGE_LENGTH_OFFSET));
+  Pointer get page => Pointer(
+      data.getUint64(PAGE_START_OFFSET), data.getUint64(PAGE_LENGTH_OFFSET));
 
   set page(Pointer pointer) {
     data.setUint64(PAGE_START_OFFSET, pointer.offset);
@@ -42,20 +42,20 @@ class MemoryPool {
   final RandomAccessFile _file;
   final _pointers = <Pointer>[];
 
-  MemoryPool(this._file, offset)
-      : _header = MemoryPoolHeader(offset) {
+  MemoryPool(this._file, offset) : _header = MemoryPoolHeader(offset) {
     final length = _file.lengthSync();
     if (length < _header.end) {
       _header.write(_file);
     } else {
       _header.read(_file);
-      if(_header.magic != MemoryPoolHeader.MAGIC) {
-        throw DBMException(500, 'MemoryPoolHeader magic mismatch: ${_header.magic}');
+      if (_header.magic != MemoryPoolHeader.MAGIC) {
+        throw DBMException(
+            500, 'MemoryPoolHeader magic mismatch: ${_header.magic}');
       }
     }
 
     // If we already have some data, load it in
-    if(_header.page.isNotEmpty) {
+    if (_header.page.isNotEmpty) {
       _read();
     }
   }
@@ -65,8 +65,7 @@ class MemoryPool {
   Pointer operator [](int index) => _pointers[index];
 
   /// Remove all pointers and clear the pointer page
-  void clear()
-  {
+  void clear() {
     _pointers.clear();
     _header.page = Pointer.NIL;
   }
@@ -122,9 +121,8 @@ class MemoryPool {
   }
 
   /// Flush everything out to disk
-  void _write()
-  {
-    if(_pointers.isNotEmpty) {
+  void _write() {
+    if (_pointers.isNotEmpty) {
       var block = PointerBlock(_header.page);
       // If we need to allocate/reallocate the pointer block
       if (block.count < _pointers.length) {
@@ -146,16 +144,15 @@ class MemoryPool {
   }
 
   /// read in the block of pointers.
-  void _read()
-  {
+  void _read() {
     _pointers.clear();
-    if(_header.page.isEmpty) return;
+    if (_header.page.isEmpty) return;
     final block = PointerBlock(_header.page);
     block.read(_file);
-    for(var i=0; i<block.count; i++) {
+    for (var i = 0; i < block.count; i++) {
       final ptr = block[i];
       // Only add non-empty pointers
-      if(ptr.isNotEmpty) _pointers.add(ptr);
+      if (ptr.isNotEmpty) _pointers.add(ptr);
     }
   }
 }

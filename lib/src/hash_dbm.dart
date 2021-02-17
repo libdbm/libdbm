@@ -44,7 +44,7 @@ class HashHeader extends Block {
   set numBuckets(int v) => data.setUint32(BUCKET_COUNT_OFFSET, v);
 
   int get numBytes => data.getUint64(BYTE_COUNT_OFFSET);
-  set numBytes(int v) => data.setUint64(BYTE_COUNT_OFFSET, max(0,v));
+  set numBytes(int v) => data.setUint64(BYTE_COUNT_OFFSET, max(0, v));
 
   int get numRecords => data.getUint64(RECORD_COUNT_OFFSET);
   set numRecords(int v) => data.setUint64(RECORD_COUNT_OFFSET, v);
