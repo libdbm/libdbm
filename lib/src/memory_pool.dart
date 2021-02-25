@@ -97,7 +97,7 @@ class MemoryPool {
   }
 
   /// Free a pointer. If adjacent block are free, they are merged into larger
-  /// blocks to encoruage reuse.
+  /// blocks to encourage reuse.
   void free(Pointer pointer) {
     _pointers.add(pointer);
 

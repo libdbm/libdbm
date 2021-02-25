@@ -117,6 +117,7 @@ class HashDBM implements DBM {
   void clear() {
     _recordPool.clear();
     _memoryPool.clear();
+    _header.numRecords = 0;
     if (_flush) {
       flush();
     }

@@ -7,10 +7,9 @@ import 'package:libdbm/libdbm.dart';
 
 const int COUNT = 10000;
 void main() {
-  File file;
+  File file = File('dummy.bin');
   final faker = Faker();
-  int writeRecords(HashDBM db, int count)
-  {
+  int writeRecords(HashDBM db, int count) {
     var size = 0;
     for (var i = 0; i < count; i++) {
       final key = utf8.encode('key: $i');
@@ -22,8 +21,8 @@ void main() {
     }
     return size;
   }
-  void deleteRecords(HashDBM db, int count)
-  {
+
+  void deleteRecords(HashDBM db, int count) {
     for (var i = 0; i < count; i++) {
       final key = utf8.encode('key: $i');
       final data = utf8.encode('value: $i');
@@ -31,26 +30,27 @@ void main() {
       expect(db.get(key), isNull);
     }
   }
-  void readRecords(HashDBM db, int count)
-  {
+
+  void readRecords(HashDBM db, int count) {
     for (var i = 0; i < count; i++) {
       final key = utf8.encode('key: $i');
       final data = utf8.encode('value: $i');
       expect(db.get(key), equals(data));
     }
   }
+
   setUp(() async {
-    file = File('dummy.bin');
+    if (file.existsSync()) file.deleteSync(recursive: true);
     file.createSync(recursive: true);
   });
   tearDown(() async {
-    File('dummy.bin').deleteSync(recursive: true);
+    if (file.existsSync()) file.deleteSync(recursive: true);
   });
   test('Create and retrieve with timing', () {
     final count = 10000;
-    for(var size in [103, 1009, 10007,100003]) {
-      var db = HashDBM(file.openSync(mode: FileMode.write), buckets: size,
-          flush:false, crc:false);
+    for (var size in [103, 1009, 10007, 100003]) {
+      var db = HashDBM(file.openSync(mode: FileMode.write),
+          buckets: size, flush: false, crc: false);
       var s = Stopwatch();
 
       s.start();
@@ -91,7 +91,7 @@ void main() {
     writeRecords(first, COUNT);
     first.close();
 
-    final second = HashDBM(file.openSync(mode: FileMode.append), buckets:103);
+    final second = HashDBM(file.openSync(mode: FileMode.append), buckets: 103);
     readRecords(second, COUNT);
     expect(second.hashTableSize, equals(1009));
     second.close();
@@ -100,7 +100,7 @@ void main() {
     final db = HashDBM(file.openSync(mode: FileMode.write));
     final size = writeRecords(db, COUNT);
     expect(db.count(), equals(COUNT));
-    expect(db.size(),greaterThan(size));
+    expect(db.size(), greaterThan(size));
 
     deleteRecords(db, COUNT);
     expect(db.count(), equals(0));
@@ -109,10 +109,11 @@ void main() {
     db.close();
   });
   test('Using CRC check on records.', () {
-    final db = HashDBM(file.openSync(mode: FileMode.write), flush:true, crc:true);
+    final db =
+        HashDBM(file.openSync(mode: FileMode.write), flush: true, crc: true);
     final size = writeRecords(db, COUNT);
     expect(db.count(), equals(COUNT));
-    expect(db.size(),greaterThan(size));
+    expect(db.size(), greaterThan(size));
 
     deleteRecords(db, COUNT);
     expect(db.count(), equals(0));
@@ -120,13 +121,13 @@ void main() {
 
     writeRecords(db, COUNT);
     expect(db.count(), equals(COUNT));
-    expect(db.size(),greaterThan(size));
+    expect(db.size(), greaterThan(size));
 
     db.close();
   });
   test('Space is reused if data is the same size.', () {
     // NOTE: If we enable flushing, the memory pool will affect size
-    final first = HashDBM(file.openSync(mode: FileMode.write), flush:true);
+    final first = HashDBM(file.openSync(mode: FileMode.write), flush: true);
     final start = file.lengthSync();
 
     writeRecords(first, COUNT);
@@ -145,19 +146,19 @@ void main() {
     final db = HashDBM(file.openSync(mode: FileMode.write));
     final keys = [];
     final data = [];
-    for(var i=0; i<100; i++) {
+    for (var i = 0; i < 100; i++) {
       final key = utf8.encode('key: $i');
       final data = utf8.encode('value: $i');
       expect(db.put(key, data), equals(data));
     }
-    for(var i=db.entries(); i.moveNext();) {
+    for (var i = db.entries(); i.moveNext();) {
       final e = i.current;
       keys.add(utf8.decode(e.key));
       data.add(utf8.decode(e.value));
     }
     expect(keys.length, equals(100));
     expect(data.length, equals(100));
-    for(var i=0; i<100; i++) {
+    for (var i = 0; i < 100; i++) {
       final key = 'key: $i';
       final data = 'value: $i';
       expect(keys.contains(key), equals(true));
@@ -167,7 +168,7 @@ void main() {
   });
   test('Calling clear() results in empty database.', () {
     var db = HashDBM(file.openSync(mode: FileMode.write));
-    for(var i=0; i<100; i++) {
+    for (var i = 0; i < 100; i++) {
       final key = utf8.encode('key: $i');
       final data = utf8.encode('value: $i');
       expect(db.put(key, data), equals(data));
@@ -176,7 +177,7 @@ void main() {
     db.clear();
     db.close();
     db = HashDBM(file.openSync(mode: FileMode.append));
-    for(var i=0; i<100; i++) {
+    for (var i = 0; i < 100; i++) {
       final key = utf8.encode('key: $i');
       expect(db.get(key), isNull);
     }
@@ -194,13 +195,13 @@ void main() {
     final db = HashDBM(file.openSync(mode: FileMode.write));
     final keys = [];
     final data = [];
-    for(var i=0; i<100; i++) {
+    for (var i = 0; i < 100; i++) {
       keys.add(utf8.encode(faker.lorem.sentences(1000).join(' ')));
       data.add(utf8.encode(faker.lorem.sentences(1000).join(' ')));
       expect(db.put(keys[i], data[i]), equals(data[i]));
     }
     expect(db.count(), equals(100));
-    for(var i=0; i<100; i++) {
+    for (var i = 0; i < 100; i++) {
       expect(db.remove(keys[i]), equals(data[i]));
     }
     expect(db.count(), equals(0));
@@ -210,23 +211,23 @@ void main() {
   });
   test('Stress mempool by deleting large numbers of records.', () {
     const MAX = 500;
-    final db = HashDBM(file.openSync(mode: FileMode.write),flush:false);
-    for(var i=0; i<MAX; i++) {
+    final db = HashDBM(file.openSync(mode: FileMode.write), flush: false);
+    for (var i = 0; i < MAX; i++) {
       final key = utf8.encode('key:$i');
       final data = utf8.encode('value:$i');
       expect(db.put(key, data), equals(data));
     }
-    for(var i=0; i<MAX; i++) {
+    for (var i = 0; i < MAX; i++) {
       final key = utf8.encode('key:$i');
       final data = utf8.encode('a value:$i');
       db.put(key, data);
     }
-    for(var i=150; i<MAX; i++) {
+    for (var i = 150; i < MAX; i++) {
       final key = utf8.encode('key:$i');
       final data = utf8.encode('a value:$i');
       expect(db.remove(key), equals(data));
     }
-    for(var i=0; i<150; i++) {
+    for (var i = 0; i < 150; i++) {
       final key = utf8.encode('key:$i');
       final data = utf8.encode('a value:$i');
       expect(db.remove(key), equals(data));
@@ -235,7 +236,7 @@ void main() {
     expect(db.count(), equals(0));
 
     var size = MAX;
-    for(var count=1; count<5; count++) {
+    for (var count = 1; count < 5; count++) {
       size *= count;
       for (var i = 0; i < size; i++) {
         final key = utf8.encode('key:$i');
@@ -295,19 +296,19 @@ void main() {
     const MAX = 10000;
 
     final db = HashDBM(file.openSync(mode: FileMode.write),
-        buckets: 109, flush:true, crc:true);
-    for(var cycle=0; cycle<CYCLES; cycle++) {
+        buckets: 109, flush: true, crc: true);
+    for (var cycle = 0; cycle < CYCLES; cycle++) {
       for (var i = 0; i < MAX; i++) {
         final key = utf8.encode('key: $i');
         final data = utf8.encode(faker.lorem.sentence());
-        db.put(key,data);
+        db.put(key, data);
         expect(db.get(key), equals(data));
       }
     }
     expect(db.count(), equals(MAX));
     db.close();
 
-    for(var cycle=0; cycle<CYCLES; cycle++) {
+    for (var cycle = 0; cycle < CYCLES; cycle++) {
       final db = HashDBM(file.openSync(mode: FileMode.append));
       for (var i in faker.randomGenerator.numbers(MAX, 100)) {
         final key = utf8.encode('key: $i');

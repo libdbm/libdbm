@@ -336,7 +336,6 @@ class HashRecordPool implements RecordPool {
     final crc = ret.crc;
     if (_checkCRC) ret.setCRC();
     if (_checkCRC && ret.crc != crc) {
-      print('$crc vs ${ret.crc}');
       throw DBMException(
           500, 'Invalid RecordBlock CRC at ${ret.pointer.offset}');
     }

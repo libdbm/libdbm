@@ -5,20 +5,19 @@ import 'package:libdbm/src/memory_pool.dart';
 import 'package:libdbm/src/io.dart';
 import 'package:libdbm/src/util.dart';
 
-
 void main() {
-  File file;
+  File file = File('dummy.bin');
   setUp(() async {
-    file = File('test/tmp/dummy.bin');
+    if (file.existsSync()) file.deleteSync(recursive: true);
     file.createSync(recursive: true);
   });
   tearDown(() async {
-    File('test/tmp').deleteSync(recursive: true);
+    if (file.existsSync()) file.deleteSync(recursive: true);
   });
   test('Test alignment', () {
-    expect(align(123, 128),equals(128));
-    expect(align(150, 128),equals(256));
-    expect(align(253, 128),equals(256));
+    expect(align(123, 128), equals(128));
+    expect(align(150, 128), equals(256));
+    expect(align(253, 128), equals(256));
   });
   test('Verify pointer merging', () {
     final r = file.openSync(mode: FileMode.write);
