@@ -1,7 +1,8 @@
 name: libdbm
-version: 0.1.2
-description: A super small and fast (1000s read/write per second) KV database for Dart using
-  disk-based hashing for lookups. No dependencies.
+version: 0.1.4
+description: A tint and fast (1000s read/write per second) database with
+  a simple API (`Map`) for Dart using disk-based hashing. No dependencies,
+  batteries included.
 homepage: https://github.com/libdbm/libdbm
 repository: https://github.com/libdbm/libdbm
 issue_tracker: https://github.com/libdbm/libdbm/issues

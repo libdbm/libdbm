@@ -329,7 +329,7 @@ class PersistentMap<K, V> implements Map<K, V> {
   @override
   Map<K2, V2> map<K2, V2>(MapEntry<K2, V2> Function(K key, V value) convert) {
     assert(convert != null);
-    Map<K2,V2> result = {};
+    Map<K2, V2> result = {};
     entries.forEach((e) {
       final entry = convert(e.key, e.value);
       result[entry.key] = entry.value;

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:convert' show utf8;
 import 'package:libdbm/libdbm.dart';
 
 void main() {
@@ -8,7 +7,7 @@ void main() {
 
   // open the database/map
   final file = File('dummy.db');
-  var db = PersistentMap.withStringValue(file, create:true);
+  var db = PersistentMap.withStringValue(file, create: true);
 
   // standard map operation
   db[key] = value;

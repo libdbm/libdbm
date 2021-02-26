@@ -1,14 +1,47 @@
 # Introduction
-This is __libdbm.dart__, a dart implementation of a `dbm` like database. Like many other
-`dbm` based systems, it uses a hashing approach to provide a very fast key-value store. It is
-purposefully intended to be very minimalistic and to have no dependencies.
+This is __libdbm.dart__, a dart implementation of a `dbm` like database. It is extremely simple
+and extremely fast. For ease-of-use, an implementation of the dart `Map` is provided in addition 
+to a lower-level API. This `Map` interface can be used to persist any data given the appropriate
+serialization parameters. Like many other `dbm` based systems, it uses a hashing approach to 
+provide a very fast key-value store. It is purposefully intended to be very minimalistic and 
+to have no dependencies.
 
 __This is an early preview__. There will be additional capabilities added, including the
 ability to maintain multiple indexes over the keys, and support for `IndexedDB` APIs.
 
 ## Getting Started
 The API is deliberately extremely simple. In order to use this library, import
-the package, open a database, and store/fetch values.
+the package, open a database, and store/fetch values. 
+
+### PersistentMap
+Using the `PersistentMap` interface is very much like using a regular map, though the
+data is stored on disk as shown below. All the regular `Map` interfaces are supported
+with the exception of the `cast()` operation.
+
+```dart
+import 'dart:io';
+import 'package:libdbm/libdbm.dart';
+
+void main() {
+  final file = File('dummy.db');
+  var db = PersistentMap.withStringValue(file, create:true);
+
+  // persistent
+  db['foo'] = 'bar';
+  var result = db['foo'];
+  print('$result');
+  db.remove('foo');
+  db.close();
+
+  file.delete();
+}
+```
+The `PersistentMap` implementation will not overwrite an existing database, though it will
+create a new one if `create:true` is specified. 
+
+### Raw DBM/HashDBM
+This API is the lowest-level API, upon which `PersistentMap` is written. It is functionally
+very similar, but requires a little more plumbing to use.
 
 ```dart
 import 'dart:io';
@@ -60,7 +93,8 @@ The database file format has some fixed and dynamic sized overheads. As a genera
 static overhead is < 1k. The dynamic overhead is whatever size is needed for the hash table and
 memory pool (roughly 16 bytes per entry each), and then a per-record overhead of about 32 bytes, and
 records are aligned to 128 byte boundaries. As such, the overhead for storing many tiny values will
-be fairly high, so it is better to aggregate such values into a single record.
+be fairly high, so it is better to aggregate such values into a single record. Conversely the overhead
+for storing largish values (such as text or JSON data) will be relatively low.
 
 ## Limitations
 
@@ -68,6 +102,7 @@ The biggest current limitations are related to robustness. The library doesn't (
 transactions and while care has been taken to ensure reliability, the library doesn't use a WAL
 so in extreme cases, there is a small chance of corruption. The best way to mitigate this
 is to have `flush` turned on. Further tests need to be/will be written to handle bad input etc.
+but the library is well tested and is used in production.
 
 Currently, the hash table size is fixed, though the file format supports rehashing/reallocating the
 hash table. In the future, this capability will be used to optimize performance automatically.
@@ -76,8 +111,9 @@ hash table. In the future, this capability will be used to optimize performance 
 
 * Versioning of values so that `n` previous values will (optionally) be kept. This will probably
   be done by implementing pointer versioning.
-* Transactions support, which will basically buffer pointer updates and then write out atomically.
+* Transaction support, which will basically buffer pointer updates and then write out atomically.
   This will be relatively simple with pointer versioning implemented.
+* An extreme form of versioning will be purely append-only behavior.
 * Index to support ordered traversal and simple queries. Probably both `btree` and `splay-tree` indexes.
 * `IndexDB` API support.
 * Maybe implement an STM server.
@@ -105,6 +141,7 @@ abstract class DBM {
   void close();
 }
 ```
+This API is expected to be stable over time, with enhancements being additive.
 
 ### Licence
 
