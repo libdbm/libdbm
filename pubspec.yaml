@@ -1,6 +1,6 @@
 name: libdbm
-version: 0.1.4
-description: A tint and fast (1000s read/write per second) database with
+version: 0.1.5
+description: A tiny and fast (1000s read/write per second) database with
   a simple API (`Map`) for Dart using disk-based hashing. No dependencies,
   batteries included.
 homepage: https://github.com/libdbm/libdbm

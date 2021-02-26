@@ -20,3 +20,7 @@
 ## [0.1.4] - Cleanups
 
 * Tweak pubspec, minor cleanup.
+
+## [0.1.5] - Cleanups
+
+* Tweak pubspec, minor cleanup.
