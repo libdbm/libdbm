@@ -24,3 +24,7 @@
 ## [0.1.5] - Cleanups
 
 * Tweak pubspec, minor cleanup.
+
+## [0.1.6] - Null safty changes
+
+* Changes to make the library null-safe.

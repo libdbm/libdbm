@@ -11,8 +11,8 @@ abstract class RecordPool {
   void clear();
   void flush();
   void free(Record record);
-  Record get(Uint8List key);
-  Record put(Uint8List key, final Uint8List value, bool overwrite);
+  Record? get(Uint8List key);
+  Record? put(Uint8List key, final Uint8List value, bool overwrite);
 
   Iterator<MapEntry<Uint8List, Uint8List>> entries();
 }

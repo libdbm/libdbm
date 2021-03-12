@@ -6,7 +6,7 @@ import 'package:libdbm/libdbm.dart';
 
 void main() {
   File file = File('dummy.bin');
-  PersistentMap<String, String> map;
+  Map<String, String> map = {};
   final faker = Faker();
   final keys = faker.lorem
       .words(10)
@@ -14,13 +14,13 @@ void main() {
       .toList();
   final values = faker.lorem.sentences(10);
   setUpAll(() async {
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
     file.createSync(recursive: true);
     map = PersistentMap.withStringValue(file);
   });
   tearDownAll(() async {
-    map.close();
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    (map as PersistentMap).close();
+    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
   });
   group('String map', () {
     test('Test insertion', () {

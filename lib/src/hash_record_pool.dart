@@ -48,14 +48,13 @@ class RecordBlock extends Block implements Record {
   }
 
   // Note, this is used to shortcut the semantics of `putIfAbsent`
-  bool _isNew;
+  bool _isNew = false;
 
   RecordBlock(Pointer pointer, Uint8List buffer) : super(pointer, buffer) {
     magic = MAGIC;
     next = Pointer(0, 0);
     keyLength = 0;
     valueLength = 0;
-    isNew = false;
   }
 
   @override
@@ -111,7 +110,7 @@ class HashRecordPoolIterator
   final PointerBlock _buckets;
   int _index;
   Pointer _ptr;
-  RecordBlock _current;
+  RecordBlock? _current;
 
   HashRecordPoolIterator(this._fetcher, this._buckets)
       : _index = 0,
@@ -121,7 +120,7 @@ class HashRecordPoolIterator
   @override
   MapEntry<Uint8List, Uint8List> get current {
     if (_current == null) throw DBMException(400, 'current() is not valid');
-    return MapEntry(_current.key, _current.value);
+    return MapEntry(_current!.key, _current!.value);
   }
 
   @override
@@ -145,8 +144,8 @@ class HashRecordPool implements RecordPool {
   final RandomAccessFile _file;
   final HashRecordPoolHeader _header;
   final MemoryPool _memoryPool;
-  PointerBlock _buckets;
   final bool _checkCRC;
+  late PointerBlock _buckets;
 
   HashRecordPool(this._file, int offset, this._memoryPool, int buckets,
       {bool crc = false})
@@ -186,10 +185,9 @@ class HashRecordPool implements RecordPool {
   @override
   void free(Record record) {
     final block = record as RecordBlock;
-    if (block == null) return null;
     final bucket = hash(block.key) % _buckets.count;
     var ptr = _buckets[bucket];
-    RecordBlock last;
+    RecordBlock? last;
     while (ptr.isNotEmpty) {
       var block = _fetch(_file, ptr);
       if (matches(block.key, record.key)) {
@@ -211,7 +209,7 @@ class HashRecordPool implements RecordPool {
   }
 
   @override
-  Record get(Uint8List key) {
+  Record? get(Uint8List key) {
     final bucket = hash(key) % _buckets.count;
     var ptr = _buckets[bucket];
     while (ptr.isNotEmpty) {
@@ -257,7 +255,7 @@ class HashRecordPool implements RecordPool {
       return ret;
     }
 
-    RecordBlock previous;
+    RecordBlock? previous;
     while (ptr.isNotEmpty) {
       var current = _fetch(_file, ptr);
       if (matches(current.key, key)) {
@@ -303,7 +301,7 @@ class HashRecordPool implements RecordPool {
     if (_checkCRC) ret.setCRC();
     ret.write(_file);
 
-    previous.next = ret.pointer;
+    previous!.next = ret.pointer;
     if (_checkCRC) previous.setCRC();
     previous.write(_file);
     return ret;

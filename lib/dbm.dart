@@ -19,14 +19,14 @@ abstract class DBM {
   /// ```dart
   /// get(utf8.encode('foo');
   /// ```
-  Uint8List get(Uint8List key);
+  Uint8List? get(Uint8List key);
 
   /// Remove a value from the database using [key]. If the key had
   /// an associated value, return the value or else return `null`
   /// ```dart
   /// remove(utf8.encode('foo');
   /// ```
-  Uint8List remove(Uint8List key);
+  Uint8List? remove(Uint8List key);
 
   /// Add a [key], [value] pair to the underlying store, overwriting any
   /// existing values. Returns the old value if one existed.
@@ -35,7 +35,7 @@ abstract class DBM {
   /// put(utf8.encode('foo',utf8.encode('baz'); // returns 'bar'
   /// get(utf8.encode('foo'); // returns 'baz'
   /// ```
-  Uint8List put(Uint8List key, Uint8List value);
+  Uint8List? put(Uint8List key, Uint8List value);
 
   /// Add a [key], [value] pair to the underlying store if not key is in
   /// the underlying store. Returns the old value if [key] existed, otherwise

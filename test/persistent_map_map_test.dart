@@ -7,7 +7,7 @@ import 'package:libdbm/libdbm.dart';
 
 void main() {
   File file = File('dummy.bin');
-  Map<String, Map<String, dynamic>> map;
+  Map<String, Map<String, dynamic>> map = {};
   final faker = Faker();
   final keys = faker.lorem
       .words(10)
@@ -34,13 +34,14 @@ void main() {
   }
 
   setUpAll(() async {
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
     file.createSync(recursive: true);
     map = PersistentMap.withMapValue(file,
         comparator: (a, b) => DeepCollectionEquality().equals(a, b));
   });
   tearDownAll(() async {
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    (map as PersistentMap).close();
+    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
   });
   group('Map value map', () {
     test('Test insertion', () {

@@ -64,7 +64,7 @@ class Block {
 
 /// A block of pointers. Useful as shorthand for setting values directly.
 class PointerBlock extends Block {
-  Uint64List _view;
+  late final Uint64List _view;
 
   PointerBlock(Pointer pointer) : super(pointer, Uint8List(pointer.length)) {
     _view = buffer.buffer.asUint64List();

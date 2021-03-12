@@ -7,7 +7,6 @@ int align(int size, int alignment) {
 }
 
 bool matches(Uint8List a, Uint8List b) {
-  if (a == null || b == null) return false;
   if (a.length != b.length) return false;
 
   for (var i = 0; i < a.length; i++) {

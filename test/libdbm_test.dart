@@ -12,8 +12,8 @@ void main() {
   int writeRecords(HashDBM db, int count) {
     var size = 0;
     for (var i = 0; i < count; i++) {
-      final key = utf8.encode('key: $i');
-      final data = utf8.encode('value: $i');
+      final key = utf8.encoder.convert('key: $i');
+      final data = utf8.encoder.convert('value: $i');
       size += key.length;
       size += data.length;
       db.put(key, data);
@@ -24,8 +24,8 @@ void main() {
 
   void deleteRecords(HashDBM db, int count) {
     for (var i = 0; i < count; i++) {
-      final key = utf8.encode('key: $i');
-      final data = utf8.encode('value: $i');
+      final key = utf8.encoder.convert('key: $i');
+      final data = utf8.encoder.convert('value: $i');
       expect(db.remove(key), equals(data));
       expect(db.get(key), isNull);
     }
@@ -33,15 +33,14 @@ void main() {
 
   void readRecords(HashDBM db, int count) {
     for (var i = 0; i < count; i++) {
-      final key = utf8.encode('key: $i');
-      final data = utf8.encode('value: $i');
+      final key = utf8.encoder.convert('key: $i');
+      final data = utf8.encoder.convert('value: $i');
       expect(db.get(key), equals(data));
     }
   }
 
   setUp(() async {
     if (file.existsSync()) file.deleteSync(recursive: true);
-    file.createSync(recursive: true);
   });
   tearDown(() async {
     if (file.existsSync()) file.deleteSync(recursive: true);
@@ -147,8 +146,8 @@ void main() {
     final keys = [];
     final data = [];
     for (var i = 0; i < 100; i++) {
-      final key = utf8.encode('key: $i');
-      final data = utf8.encode('value: $i');
+      final key = utf8.encoder.convert('key: $i');
+      final data = utf8.encoder.convert('value: $i');
       expect(db.put(key, data), equals(data));
     }
     for (var i = db.entries(); i.moveNext();) {
@@ -169,8 +168,8 @@ void main() {
   test('Calling clear() results in empty database.', () {
     var db = HashDBM(file.openSync(mode: FileMode.write));
     for (var i = 0; i < 100; i++) {
-      final key = utf8.encode('key: $i');
-      final data = utf8.encode('value: $i');
+      final key = utf8.encoder.convert('key: $i');
+      final data = utf8.encoder.convert('value: $i');
       expect(db.put(key, data), equals(data));
       expect(db.get(key), equals(data));
     }
@@ -178,7 +177,7 @@ void main() {
     db.close();
     db = HashDBM(file.openSync(mode: FileMode.append));
     for (var i = 0; i < 100; i++) {
-      final key = utf8.encode('key: $i');
+      final key = utf8.encoder.convert('key: $i');
       expect(db.get(key), isNull);
     }
     var i = db.entries();
@@ -196,8 +195,8 @@ void main() {
     final keys = [];
     final data = [];
     for (var i = 0; i < 100; i++) {
-      keys.add(utf8.encode(faker.lorem.sentences(1000).join(' ')));
-      data.add(utf8.encode(faker.lorem.sentences(1000).join(' ')));
+      keys.add(utf8.encoder.convert(faker.lorem.sentences(1000).join(' ')));
+      data.add(utf8.encoder.convert(faker.lorem.sentences(1000).join(' ')));
       expect(db.put(keys[i], data[i]), equals(data[i]));
     }
     expect(db.count(), equals(100));
@@ -213,23 +212,23 @@ void main() {
     const MAX = 500;
     final db = HashDBM(file.openSync(mode: FileMode.write), flush: false);
     for (var i = 0; i < MAX; i++) {
-      final key = utf8.encode('key:$i');
-      final data = utf8.encode('value:$i');
+      final key = utf8.encoder.convert('key:$i');
+      final data = utf8.encoder.convert('value:$i');
       expect(db.put(key, data), equals(data));
     }
     for (var i = 0; i < MAX; i++) {
-      final key = utf8.encode('key:$i');
-      final data = utf8.encode('a value:$i');
+      final key = utf8.encoder.convert('key:$i');
+      final data = utf8.encoder.convert('a value:$i');
       db.put(key, data);
     }
     for (var i = 150; i < MAX; i++) {
-      final key = utf8.encode('key:$i');
-      final data = utf8.encode('a value:$i');
+      final key = utf8.encoder.convert('key:$i');
+      final data = utf8.encoder.convert('a value:$i');
       expect(db.remove(key), equals(data));
     }
     for (var i = 0; i < 150; i++) {
-      final key = utf8.encode('key:$i');
-      final data = utf8.encode('a value:$i');
+      final key = utf8.encoder.convert('key:$i');
+      final data = utf8.encoder.convert('a value:$i');
       expect(db.remove(key), equals(data));
     }
     db.flush();
@@ -239,26 +238,26 @@ void main() {
     for (var count = 1; count < 5; count++) {
       size *= count;
       for (var i = 0; i < size; i++) {
-        final key = utf8.encode('key:$i');
-        final data = utf8.encode('value:$i');
+        final key = utf8.encoder.convert('key:$i');
+        final data = utf8.encoder.convert('value:$i');
         expect(db.put(key, data), equals(data));
       }
       db.flush();
       for (var i = 0; i < size; i += 2) {
-        final key = utf8.encode('key:$i');
-        final data = utf8.encode('value:$i');
+        final key = utf8.encoder.convert('key:$i');
+        final data = utf8.encoder.convert('value:$i');
         expect(db.remove(key), equals(data));
       }
       db.flush();
     }
     for (var i = 0; i < 50000; i++) {
-      final key = utf8.encode('key:$i');
-      final data = utf8.encode('value:$i');
+      final key = utf8.encoder.convert('key:$i');
+      final data = utf8.encoder.convert('value:$i');
       expect(db.put(key, data), equals(data));
     }
     for (var i = 0; i < 50000; i++) {
-      final key = utf8.encode('key:$i');
-      final data = utf8.encode('value:$i');
+      final key = utf8.encoder.convert('key:$i');
+      final data = utf8.encoder.convert('value:$i');
       expect(db.remove(key), equals(data));
     }
     db.flush();
@@ -269,9 +268,9 @@ void main() {
   });
   test('Verify putIfAbsent behavior', () {
     final db = HashDBM(file.openSync(mode: FileMode.write), buckets: 109);
-    final key = utf8.encode('key');
-    final first = utf8.encode('first');
-    final second = utf8.encode('second');
+    final key = utf8.encoder.convert('key');
+    final first = utf8.encoder.convert('first');
+    final second = utf8.encoder.convert('second');
 
     // Insert a new value, returns the new value
     expect(db.putIfAbsent(key, first), equals(first));
@@ -299,8 +298,8 @@ void main() {
         buckets: 109, flush: true, crc: true);
     for (var cycle = 0; cycle < CYCLES; cycle++) {
       for (var i = 0; i < MAX; i++) {
-        final key = utf8.encode('key: $i');
-        final data = utf8.encode(faker.lorem.sentence());
+        final key = utf8.encoder.convert('key: $i');
+        final data = utf8.encoder.convert(faker.lorem.sentence());
         db.put(key, data);
         expect(db.get(key), equals(data));
       }
@@ -311,8 +310,8 @@ void main() {
     for (var cycle = 0; cycle < CYCLES; cycle++) {
       final db = HashDBM(file.openSync(mode: FileMode.append));
       for (var i in faker.randomGenerator.numbers(MAX, 100)) {
-        final key = utf8.encode('key: $i');
-        final data = utf8.encode(faker.lorem.sentence());
+        final key = utf8.encoder.convert('key: $i');
+        final data = utf8.encoder.convert(faker.lorem.sentence());
         expect(db.remove(key), isNotNull);
         expect(db.put(key, data), equals(data));
       }

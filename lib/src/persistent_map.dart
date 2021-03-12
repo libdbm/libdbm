@@ -18,7 +18,7 @@ class _EntryIterator<K, V> implements Iterator<MapEntry<K, V>> {
   final Iterator<MapEntry<Uint8List, Uint8List>> _iterator;
   final K Function(Uint8List) _keyDeserializer;
   final V Function(Uint8List) _valueDeserializer;
-  MapEntry<K, V> _current;
+  late MapEntry<K, V> _current;
 
   _EntryIterator(
       this._iterator, this._keyDeserializer, this._valueDeserializer);
@@ -41,7 +41,7 @@ class _EntryIterator<K, V> implements Iterator<MapEntry<K, V>> {
 class _KeyIterator<K> implements Iterator<K> {
   final Iterator<MapEntry<Uint8List, Uint8List>> _iterator;
   final K Function(Uint8List) _keyDeserializer;
-  K _current;
+  late K _current;
 
   _KeyIterator(this._iterator, this._keyDeserializer);
 
@@ -62,7 +62,7 @@ class _KeyIterator<K> implements Iterator<K> {
 class _ValueIterator<V> implements Iterator<V> {
   final Iterator<MapEntry<Uint8List, Uint8List>> _iterator;
   final V Function(Uint8List) _valueDeserializer;
-  V _current;
+  late V _current;
 
   _ValueIterator(this._iterator, this._valueDeserializer);
 
@@ -82,7 +82,7 @@ class _ValueIterator<V> implements Iterator<V> {
 /// PersistentMap used a DBM database to provide an implementation of the
 /// dart Map interface which transparently saves the Map to disk
 class PersistentMap<K, V> implements Map<K, V> {
-  final HashDBM _dbm;
+  final DBM _dbm;
   final Uint8List Function(K) _keySerializer;
   final K Function(Uint8List) _keyDeserializer;
   final Uint8List Function(V) _valueSerializer;
@@ -94,12 +94,7 @@ class PersistentMap<K, V> implements Map<K, V> {
   /// and value serialization functions, and an optional value comparator.
   PersistentMap(this._dbm, this._keySerializer, this._keyDeserializer,
       this._valueSerializer, this._valueDeserializer,
-      {bool Function(V, V) valueComparator})
-      : assert(_dbm != null),
-        assert(_keySerializer != null),
-        assert(_keyDeserializer != null),
-        assert(_valueSerializer != null),
-        assert(_valueDeserializer != null) {
+      {bool Function(V, V)? valueComparator}) {
     if (valueComparator != null) _valueComparator = valueComparator;
   }
 
@@ -112,9 +107,9 @@ class PersistentMap<K, V> implements Map<K, V> {
       {bool create = false}) {
     return make<String, String>(
         file,
-        (key) => convert.utf8.encode(key),
+        (key) => convert.utf8.encoder.convert(key),
         (bytes) => convert.utf8.decode(bytes),
-        (value) => convert.utf8.encode(value),
+        (value) => convert.utf8.encoder.convert(value),
         (bytes) => convert.utf8.decode(bytes),
         create: create);
   }
@@ -129,12 +124,12 @@ class PersistentMap<K, V> implements Map<K, V> {
   static PersistentMap<String, Map<String, dynamic>> withMapValue(
       final File file,
       {bool create = false,
-      bool Function(Map<String, dynamic>, Map<String, dynamic>) comparator}) {
+      bool Function(Map<String, dynamic>, Map<String, dynamic>)? comparator}) {
     return make<String, Map<String, dynamic>>(
         file,
-        (key) => convert.utf8.encode(key),
+        (key) => convert.utf8.encoder.convert(key),
         (bytes) => convert.utf8.decode(bytes),
-        (value) => convert.utf8.encode(convert.json.encode(value)),
+        (value) => convert.utf8.encoder.convert(convert.json.encode(value)),
         (bytes) => convert.json.decode(convert.utf8.decode(bytes)),
         create: create,
         comparator: comparator);
@@ -154,22 +149,20 @@ class PersistentMap<K, V> implements Map<K, V> {
       final Uint8List Function(V1) valueSerializer,
       final V1 Function(Uint8List) valueDeserializer,
       {bool create = false,
-      bool Function(V1, V1) comparator}) {
-    assert(file != null);
-    RandomAccessFile random;
+      bool Function(V1, V1)? comparator}) {
+    late final RandomAccessFile random;
     if (file.existsSync()) {
       random = file.openSync(mode: FileMode.append);
     } else if (create) {
       file.createSync(recursive: true);
       random = file.openSync(mode: FileMode.write);
+    } else {
+      throw StateError('File does not exist and create flag not specified.');
     }
-    if (random != null) {
-      DBM dbm = HashDBM(random);
-      return PersistentMap<K1, V1>(dbm, keySerializer, keyDeserializer,
-          valueSerializer, valueDeserializer,
-          valueComparator: comparator);
-    }
-    throw FileSystemException('File not found');
+    DBM dbm = HashDBM(random);
+    return PersistentMap<K1, V1>(dbm, keySerializer, keyDeserializer,
+        valueSerializer, valueDeserializer,
+        valueComparator: comparator);
   }
 
   void close() {
@@ -177,9 +170,9 @@ class PersistentMap<K, V> implements Map<K, V> {
   }
 
   @override
-  operator [](Object key) {
+  V? operator [](Object? key) {
     assert(key != null);
-    final ret = _dbm.get(_keySerializer(key));
+    final ret = _dbm.get(_keySerializer(key as K));
     return ret != null ? _valueDeserializer(ret) : null;
   }
 
@@ -192,13 +185,11 @@ class PersistentMap<K, V> implements Map<K, V> {
 
   @override
   void addAll(Map<K, V> other) {
-    assert(other != null);
     addEntries(other.entries);
   }
 
   @override
   void addEntries(Iterable<MapEntry<K, V>> newEntries) {
-    assert(newEntries != null);
     for (var e in newEntries) {
       _dbm.put(_keySerializer(e.key), _valueSerializer(e.value));
     }
@@ -217,7 +208,7 @@ class PersistentMap<K, V> implements Map<K, V> {
   }
 
   @override
-  bool containsKey(Object key) {
+  bool containsKey(dynamic key) {
     assert(key != null);
     return _dbm.get(_keySerializer(key)) != null;
   }
@@ -229,7 +220,7 @@ class PersistentMap<K, V> implements Map<K, V> {
   /// Given that this function will check _every_ value until a match is found
   /// it can potentially have significant performance impact.
   @override
-  bool containsValue(Object value) {
+  bool containsValue(dynamic value) {
     assert(value != null);
     for (var v in values) {
       if (_valueComparator(v, value)) {
@@ -245,7 +236,6 @@ class PersistentMap<K, V> implements Map<K, V> {
 
   @override
   void forEach(void Function(K key, V value) action) {
-    assert(action != null);
     entries.forEach((e) => action(e.key, e.value));
   }
 
@@ -265,7 +255,6 @@ class PersistentMap<K, V> implements Map<K, V> {
   @override
   V putIfAbsent(K key, V Function() ifAbsent) {
     assert(key != null);
-    assert(ifAbsent != null);
     final value = ifAbsent();
     assert(value != null, 'value from isAbsent() is null');
     final ret = _dbm.putIfAbsent(_keySerializer(key), _valueSerializer(value));
@@ -273,15 +262,14 @@ class PersistentMap<K, V> implements Map<K, V> {
   }
 
   @override
-  V remove(Object key) {
+  V? remove(Object? key) {
     assert(key != null);
-    final ret = _dbm.remove(_keySerializer(key));
+    final ret = _dbm.remove(_keySerializer(key as K));
     return ret != null ? _valueDeserializer(ret) : null;
   }
 
   @override
-  void removeWhere(bool Function(K key, V value) test) {
-    assert(test != null);
+  void removeWhere(bool test(K key, V value)) {
     final remove = [];
     entries.forEach((e) {
       if (test(e.key, e.value)) remove.add(e.key);
@@ -292,30 +280,27 @@ class PersistentMap<K, V> implements Map<K, V> {
   }
 
   @override
-  V update(K key, Function(V value) ifPresent, {Function() ifAbsent}) {
+  V update(K key, V ifPresent(V value), {V ifAbsent()?}) {
     assert(key != null);
     final k = _keySerializer(key);
     final tmp = _dbm.get(k);
     var ret;
     if (tmp != null) {
-      assert(update != null);
       ret = ifPresent(_valueDeserializer(tmp));
       _dbm.put(k, _valueSerializer(ret));
     } else {
       assert(ifAbsent != null);
-      ret = ifAbsent();
+      ret = ifAbsent!();
       _dbm.put(k, _valueSerializer(ret));
     }
     return ret;
   }
 
   @override
-  void updateAll(Function(K key, V value) update) {
-    assert(update != null);
-    final all = keys.toList();
-    for (var key in all) {
+  void updateAll(V update(K key, V value)) {
+    for (var key in keys.toList()) {
       final k = _keySerializer(key);
-      final v = update(key, _valueDeserializer(_dbm.get(k)));
+      final v = update(key, _valueDeserializer(_dbm.get(k)!));
       _dbm.put(_keySerializer(key), _valueSerializer(v));
     }
   }
@@ -328,7 +313,6 @@ class PersistentMap<K, V> implements Map<K, V> {
   /// a mapping function to each key-value pair.
   @override
   Map<K2, V2> map<K2, V2>(MapEntry<K2, V2> Function(K key, V value) convert) {
-    assert(convert != null);
     Map<K2, V2> result = {};
     entries.forEach((e) {
       final entry = convert(e.key, e.value);

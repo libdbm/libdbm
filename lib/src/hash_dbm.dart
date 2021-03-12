@@ -61,8 +61,8 @@ class HashDBM implements DBM {
   final HashHeader _header;
   final bool _flush;
 
-  RecordPool _recordPool;
-  MemoryPool _memoryPool;
+  late final RecordPool _recordPool;
+  late final MemoryPool _memoryPool;
 
   /// Open a new database. Optional parameters are: [buckets] which sets the
   /// number of hash buckets to use, [flush] which when set to true will force
@@ -135,17 +135,12 @@ class HashDBM implements DBM {
   }
 
   @override
-  Uint8List get(Uint8List key) {
-    assert(key != null);
-
+  Uint8List? get(Uint8List key) {
     return _recordPool.get(key)?.value;
   }
 
   @override
   Uint8List putIfAbsent(Uint8List key, Uint8List value) {
-    assert(key != null);
-    assert(value != null);
-
     var record = _recordPool.put(key, value, false) as RecordBlock;
     if (record.isNew) {
       _header.numBytes += record.size;
@@ -158,10 +153,7 @@ class HashDBM implements DBM {
   }
 
   @override
-  Uint8List put(Uint8List key, Uint8List value) {
-    assert(key != null);
-    assert(value != null);
-
+  Uint8List? put(Uint8List key, Uint8List value) {
     final record = _recordPool.put(key, value, true) as RecordBlock;
     if (record.isNew) {
       _header.numBytes += record.size;
@@ -174,9 +166,7 @@ class HashDBM implements DBM {
   }
 
   @override
-  Uint8List remove(Uint8List key) {
-    assert(key != null);
-
+  Uint8List? remove(Uint8List key) {
     final record = _recordPool.get(key);
     if (record != null) _recordPool.free(record);
     _header.numRecords -= record == null ? 0 : 1;

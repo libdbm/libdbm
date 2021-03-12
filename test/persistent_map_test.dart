@@ -1,20 +1,18 @@
 import 'dart:io';
 import 'package:test/test.dart';
-import 'package:faker/faker.dart';
-import 'package:collection/collection.dart';
 
 import 'package:libdbm/libdbm.dart';
 
 void main() {
   var file = File('dummy.bin');
   setUp(() async {
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
   });
   tearDown(() async {
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
   });
   test('Test create flag', () {
-    expect(() => PersistentMap.withStringValue(file), throwsException);
+    expect(() => PersistentMap.withStringValue(file), throwsStateError);
 
     var map = PersistentMap.withStringValue(file, create: true);
     expect(map.length, equals(0));
@@ -34,27 +32,12 @@ void main() {
   test('Test asserts', () {
     var map = PersistentMap.withStringValue(file, create: true);
 
-    expect(
-        () => map.putIfAbsent(null, () => ''), throwsA(isA<AssertionError>()));
-    expect(() => map.putIfAbsent('foo', () => null),
-        throwsA(isA<AssertionError>()));
     expect(() => map[null], throwsA(isA<AssertionError>()));
-    expect(() => map['foo'] = null, throwsA(isA<AssertionError>()));
     expect(() => map.remove(null), throwsA(isA<AssertionError>()));
-    expect(() => map.removeWhere(null), throwsA(isA<AssertionError>()));
-    expect(() => map.addAll(null), throwsA(isA<AssertionError>()));
-    expect(() => map.addEntries(null), throwsA(isA<AssertionError>()));
     expect(() => map.containsKey(null), throwsA(isA<AssertionError>()));
     expect(() => map.containsValue(null), throwsA(isA<AssertionError>()));
-    expect(() => map.forEach(null), throwsA(isA<AssertionError>()));
-    expect(() => map.update(null, null, ifAbsent: null),
-        throwsA(isA<AssertionError>()));
-    expect(() => map.update('foo', null, ifAbsent: null),
-        throwsA(isA<AssertionError>()));
     expect(() => map.update('foo', (v) => 'bar', ifAbsent: null),
         throwsA(isA<AssertionError>()));
-    expect(() => map.updateAll(null), throwsA(isA<AssertionError>()));
-    expect(() => map.map(null), throwsA(isA<AssertionError>()));
     map.close();
   });
 }
