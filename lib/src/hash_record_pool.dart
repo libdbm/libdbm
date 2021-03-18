@@ -44,7 +44,7 @@ class RecordBlock extends Block implements Record {
   static int DATA_OFFSET = NEXT_RECORD_LENGTH_OFFSET + 8;
 
   static int required(Uint8List key, Uint8List value) {
-    return key.length + value.length + DATA_OFFSET + 8;
+    return key.length + value.length + DATA_OFFSET + 16;
   }
 
   // Note, this is used to shortcut the semantics of `putIfAbsent`
@@ -145,7 +145,7 @@ class HashRecordPool implements RecordPool {
   final HashRecordPoolHeader _header;
   final MemoryPool _memoryPool;
   final bool _checkCRC;
-  late PointerBlock _buckets;
+  late final PointerBlock _buckets;
 
   HashRecordPool(this._file, int offset, this._memoryPool, int buckets,
       {bool crc = false})

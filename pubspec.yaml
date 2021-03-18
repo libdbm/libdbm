@@ -1,5 +1,5 @@
 name: libdbm
-version: 0.1.6
+version: 0.1.7
 description: A tiny and fast (1000s read/write per second) database with
   a simple API (`Map`) for Dart using disk-based hashing. No dependencies,
   batteries included.

@@ -34,14 +34,20 @@ void main() {
   }
 
   setUpAll(() async {
-    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
+    if (file.existsSync())
+      try {
+        file.deleteSync(recursive: true);
+      } finally {}
     file.createSync(recursive: true);
     map = PersistentMap.withMapValue(file,
         comparator: (a, b) => DeepCollectionEquality().equals(a, b));
   });
   tearDownAll(() async {
     (map as PersistentMap).close();
-    if (file.existsSync()) try { file.deleteSync(recursive: true); } finally {}
+    if (file.existsSync())
+      try {
+        file.deleteSync(recursive: true);
+      } finally {}
   });
   group('Map value map', () {
     test('Test insertion', () {

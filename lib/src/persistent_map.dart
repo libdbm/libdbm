@@ -150,18 +150,18 @@ class PersistentMap<K, V> implements Map<K, V> {
       final V1 Function(Uint8List) valueDeserializer,
       {bool create = false,
       bool Function(V1, V1)? comparator}) {
-    late final RandomAccessFile random;
+    late final RandomAccessFile _random;
     if (file.existsSync()) {
-      random = file.openSync(mode: FileMode.append);
+      _random = file.openSync(mode: FileMode.append);
     } else if (create) {
       file.createSync(recursive: true);
-      random = file.openSync(mode: FileMode.write);
+      _random = file.openSync(mode: FileMode.write);
     } else {
       throw StateError('File does not exist and create flag not specified.');
     }
-    DBM dbm = HashDBM(random);
-    return PersistentMap<K1, V1>(dbm, keySerializer, keyDeserializer,
-        valueSerializer, valueDeserializer,
+    DBM dbm = HashDBM(_random);
+    return PersistentMap<K1, V1>(
+        dbm, keySerializer, keyDeserializer, valueSerializer, valueDeserializer,
         valueComparator: comparator);
   }
 

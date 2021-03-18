@@ -25,6 +25,11 @@
 
 * Tweak pubspec, minor cleanup.
 
-## [0.1.6] - Null safty changes
+## [0.1.6] - Null safety changes
 
 * Changes to make the library null-safe.
+
+## [0.1.7] - Clean ups and bug fixes
+
+* Fixes to the block size calculation.
+* Cleanups
