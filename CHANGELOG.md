@@ -33,3 +33,9 @@
 
 * Fixes to the block size calculation.
 * Cleanups
+
+## [0.1.8] - Clean ups and bug fixes
+
+* Fixed README to align with null-safe API.
+* Fixed pedantic errors.
+

@@ -1,7 +1,8 @@
-import 'dart:io';
 import 'dart:convert' as convert;
+import 'dart:io';
 import 'dart:typed_data';
-import 'package:libdbm/libdbm.dart';
+
+import '../libdbm.dart';
 
 // Hidden iterable for persistent maps
 class _Iterable<T> extends Iterable<T> {
@@ -88,6 +89,7 @@ class PersistentMap<K, V> implements Map<K, V> {
   final Uint8List Function(V) _valueSerializer;
   final V Function(Uint8List) _valueDeserializer;
 
+  // ignore: prefer_function_declarations_over_variables
   bool Function(V, V) _valueComparator = (a, b) => a == b;
 
   /// Create a new PersistentMap, with the underlying dbm database, key
@@ -165,6 +167,7 @@ class PersistentMap<K, V> implements Map<K, V> {
         valueComparator: comparator);
   }
 
+  /// Close this database
   void close() {
     _dbm.close();
   }
@@ -236,7 +239,9 @@ class PersistentMap<K, V> implements Map<K, V> {
 
   @override
   void forEach(void Function(K key, V value) action) {
-    entries.forEach((e) => action(e.key, e.value));
+    for(var e in entries) {
+      action(e.key, e.value);
+    }
   }
 
   @override
@@ -271,9 +276,9 @@ class PersistentMap<K, V> implements Map<K, V> {
   @override
   void removeWhere(bool test(K key, V value)) {
     final remove = [];
-    entries.forEach((e) {
+    for(var e in entries) {
       if (test(e.key, e.value)) remove.add(e.key);
-    });
+    };
     for (var k in remove) {
       _dbm.remove(_keySerializer(k));
     }
@@ -313,11 +318,11 @@ class PersistentMap<K, V> implements Map<K, V> {
   /// a mapping function to each key-value pair.
   @override
   Map<K2, V2> map<K2, V2>(MapEntry<K2, V2> Function(K key, V value) convert) {
-    Map<K2, V2> result = {};
-    entries.forEach((e) {
+    var result = <K2, V2>{};
+    for(var e in entries) {
       final entry = convert(e.key, e.value);
       result[entry.key] = entry.value;
-    });
+    };
     return result;
   }
 }

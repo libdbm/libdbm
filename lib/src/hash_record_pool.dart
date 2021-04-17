@@ -1,55 +1,76 @@
-import 'dart:typed_data';
 import 'dart:io';
+import 'dart:typed_data';
 
 import '../dbm.dart';
 import 'io.dart';
-import 'util.dart';
 import 'memory_pool.dart';
 import 'record_pool.dart';
+import 'util.dart';
 
 /// Header for the hash pool
 class HashRecordPoolHeader extends Block {
-  static int MAGIC = 0xa0ba51c0da7aba5e;
-  static int HEADER_SIZE = 128;
+  /// Magic number for the hashed record pool
+  // ignore: non_constant_identifier_names
+  static final int MAGIC = 0xa0ba51c0da7aba5e;
 
-  static int MAGIC_OFFSET = 0;
-  static int PAGE_START_OFFSET = MAGIC_OFFSET + 8;
-  static int PAGE_LENGTH_OFFSET = PAGE_START_OFFSET + 8;
+  /// Size of the header
+  // ignore: non_constant_identifier_names
+  static final int HEADER_SIZE = 128;
 
+  // ignore: non_constant_identifier_names
+  static final int _MAGIC_OFFSET = 0;
+  // ignore: non_constant_identifier_names
+  static final int _PAGE_START_OFFSET = _MAGIC_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _PAGE_LENGTH_OFFSET = _PAGE_START_OFFSET + 8;
+
+  /// Create a header located at a given offset from data passed in
   HashRecordPoolHeader(int offset)
       : super(Pointer(offset, HEADER_SIZE), Uint8List(HEADER_SIZE)) {
     magic = MAGIC;
     page = Pointer(0, 0);
   }
 
-  int get magic => data.getUint64(MAGIC_OFFSET);
-  set magic(int v) => data.setUint64(MAGIC_OFFSET, v);
+  /// Get the magic number.
+  int get magic => data.getUint64(_MAGIC_OFFSET);
+  set magic(int v) => data.setUint64(_MAGIC_OFFSET, v);
 
+  /// Get the page the record pool starts at
   Pointer get page => Pointer(
-      data.getUint64(PAGE_START_OFFSET), data.getUint64(PAGE_LENGTH_OFFSET));
-
+      data.getUint64(_PAGE_START_OFFSET), data.getUint64(_PAGE_LENGTH_OFFSET));
   set page(Pointer pointer) {
-    data.setUint64(PAGE_START_OFFSET, pointer.offset);
-    data.setUint64(PAGE_LENGTH_OFFSET, pointer.length);
+    data.setUint64(_PAGE_START_OFFSET, pointer.offset);
+    data.setUint64(_PAGE_LENGTH_OFFSET, pointer.length);
   }
 }
 
 /// A block holding a key-value pair
 class RecordBlock extends Block implements Record {
-  static int MAGIC = 0xa0c011ec7ed01eaf;
-  static int MAGIC_OFFSET = 0;
-  static int CRC_OFFSET = MAGIC_OFFSET + 8;
-  static int NEXT_RECORD_OFFSET = CRC_OFFSET + 8;
-  static int NEXT_RECORD_LENGTH_OFFSET = NEXT_RECORD_OFFSET + 8;
-  static int DATA_OFFSET = NEXT_RECORD_LENGTH_OFFSET + 8;
+  /// Magic number of a block
+  // ignore: non_constant_identifier_names
+  static final int MAGIC = 0xa0c011ec7ed01eaf;
 
+  // ignore: non_constant_identifier_names
+  static final int _MAGIC_OFFSET = 0;
+  // ignore: non_constant_identifier_names
+  static final int _CRC_OFFSET = _MAGIC_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _NEXT_RECORD_OFFSET = _CRC_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _NEXT_RECORD_LENGTH_OFFSET = _NEXT_RECORD_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _DATA_OFFSET = _NEXT_RECORD_LENGTH_OFFSET + 8;
+
+  /// Calculate the number of bytes required for a key+value pair.
   static int required(Uint8List key, Uint8List value) {
-    return key.length + value.length + DATA_OFFSET + 16;
+    return key.length + value.length + _DATA_OFFSET + 16;
   }
 
   // Note, this is used to shortcut the semantics of `putIfAbsent`
   bool _isNew = false;
 
+  /// Create a block from the given data, located at a given offset within
+  /// a file.
   RecordBlock(Pointer pointer, Uint8List buffer) : super(pointer, buffer) {
     magic = MAGIC;
     next = Pointer(0, 0);
@@ -74,33 +95,46 @@ class RecordBlock extends Block implements Record {
     buffer.setRange(valueOffset, valueOffset + valueLength, v);
   }
 
+  /// A flag indicating if the record is newly added.
+  // ignore: unnecessary_getters_setters
   bool get isNew => _isNew;
+  // ignore: unnecessary_getters_setters
   set isNew(bool v) => _isNew = v;
 
-  int get crc => data.getUint32(CRC_OFFSET);
+  /// The CRC of the record
+  int get crc => data.getUint32(_CRC_OFFSET);
+
+  /// Calculate and set the CRC of the underlying buffer
   void setCRC() {
-    data.setUint32(CRC_OFFSET, 0);
-    data.setUint32(CRC_OFFSET, crc32(buffer));
+    data.setUint32(_CRC_OFFSET, 0);
+    data.setUint32(_CRC_OFFSET, crc32(buffer));
   }
 
-  int get keyOffset => DATA_OFFSET + 8;
-  int get keyLength => data.getUint64(DATA_OFFSET);
-  set keyLength(int i) => data.setUint64(DATA_OFFSET, i);
+  /// The offset to the key, in bytes
+  int get keyOffset => _DATA_OFFSET + 8;
 
+  /// The length of the key, in bytes
+  int get keyLength => data.getUint64(_DATA_OFFSET);
+  set keyLength(int i) => data.setUint64(_DATA_OFFSET, i);
+
+  /// The offset to the value, in bytes
   int get valueOffset => keyOffset + keyLength + 8;
+
+  /// The length of the value, in bytes
   int get valueLength => data.getUint64(keyOffset + keyLength);
   set valueLength(int i) => data.setUint64(keyOffset + keyLength, i);
 
-  Pointer get next => Pointer(data.getUint64(NEXT_RECORD_OFFSET),
-      data.getUint64(NEXT_RECORD_LENGTH_OFFSET));
-
+  /// Access to the next record in the chain associated with a bucket
+  Pointer get next => Pointer(data.getUint64(_NEXT_RECORD_OFFSET),
+      data.getUint64(_NEXT_RECORD_LENGTH_OFFSET));
   set next(Pointer pointer) => {
-        data.setUint64(NEXT_RECORD_OFFSET, pointer.offset),
-        data.setUint64(NEXT_RECORD_LENGTH_OFFSET, pointer.length)
+        data.setUint64(_NEXT_RECORD_OFFSET, pointer.offset),
+        data.setUint64(_NEXT_RECORD_LENGTH_OFFSET, pointer.length)
       };
 
-  int get magic => data.getUint64(MAGIC_OFFSET);
-  set magic(int v) => data.setUint64(MAGIC_OFFSET, v);
+  /// Access to the record magic number
+  int get magic => data.getUint64(_MAGIC_OFFSET);
+  set magic(int v) => data.setUint64(_MAGIC_OFFSET, v);
 }
 
 /// Iterator over the hash table.
@@ -112,6 +146,7 @@ class HashRecordPoolIterator
   Pointer _ptr;
   RecordBlock? _current;
 
+  /// Constructor
   HashRecordPoolIterator(this._fetcher, this._buckets)
       : _index = 0,
         _ptr = Pointer.NIL,
@@ -147,6 +182,8 @@ class HashRecordPool implements RecordPool {
   final bool _checkCRC;
   late final PointerBlock _buckets;
 
+  /// Create a new record pool. [memoryPool] is used to actually allocate
+  /// records
   HashRecordPool(this._file, int offset, this._memoryPool, int buckets,
       {bool crc = false})
       : _header = HashRecordPoolHeader(offset),

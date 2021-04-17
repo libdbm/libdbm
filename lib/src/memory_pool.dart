@@ -1,47 +1,69 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:libdbm/libdbm.dart';
+import '../libdbm.dart';
 import 'io.dart';
 import 'util.dart';
 
 /// Header for the memory pool
 class MemoryPoolHeader extends Block {
-  static int MAGIC = 0xa0c0a1e5ced0da7a;
-  static int HEADER_SIZE = 128;
+  /// Magic number of the memory pool
+  // ignore: non_constant_identifier_names
+  static final int MAGIC = 0xa0c0a1e5ced0da7a;
 
-  static int MAGIC_OFFSET = 0;
-  static int PAGE_START_OFFSET = MAGIC_OFFSET + 8;
-  static int PAGE_LENGTH_OFFSET = PAGE_START_OFFSET + 8;
+  /// Size of the header for the memory pool
+  // ignore: non_constant_identifier_names
+  static final int HEADER_SIZE = 128;
 
+  // ignore: non_constant_identifier_names
+  static final int _MAGIC_OFFSET = 0;
+  // ignore: non_constant_identifier_names
+  static final int _PAGE_START_OFFSET = _MAGIC_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _PAGE_LENGTH_OFFSET = _PAGE_START_OFFSET + 8;
+
+  /// Create a header loaded from the given offset
   MemoryPoolHeader(int offset)
       : super(Pointer(offset, HEADER_SIZE), Uint8List(HEADER_SIZE)) {
     magic = MAGIC;
     page = Pointer.NIL;
   }
 
-  int get magic => data.getUint64(MAGIC_OFFSET);
-  set magic(int v) => data.setUint64(MAGIC_OFFSET, v);
+  /// Access to the magic number of the header
+  int get magic => data.getUint64(_MAGIC_OFFSET);
+  set magic(int v) => data.setUint64(_MAGIC_OFFSET, v);
 
+  /// Access to the page pointer for the memory pool. Note that this can be
+  /// changed, thereby allowing reallocation of a memory pool.
   Pointer get page => Pointer(
-      data.getUint64(PAGE_START_OFFSET), data.getUint64(PAGE_LENGTH_OFFSET));
-
+      data.getUint64(_PAGE_START_OFFSET), data.getUint64(_PAGE_LENGTH_OFFSET));
   set page(Pointer pointer) {
-    data.setUint64(PAGE_START_OFFSET, pointer.offset);
-    data.setUint64(PAGE_LENGTH_OFFSET, pointer.length);
+    data.setUint64(_PAGE_START_OFFSET, pointer.offset);
+    data.setUint64(_PAGE_LENGTH_OFFSET, pointer.length);
   }
 }
 
 /// Class for managing blocks of storage on persistent media. This could be
 /// abstracted/extracted out as an interface
 class MemoryPool {
-  static int ALIGNMENT = 128;
-  static int SPLIT_THRESHOLD = 512;
-  static int SIZE = MemoryPoolHeader.HEADER_SIZE;
+  /// Byte alignment of pages in the memory pool. All units will scale to
+  /// fall on boundaries of this size.
+  // ignore: non_constant_identifier_names
+  static final int ALIGNMENT = 128;
+
+  /// Size of the memory pool
+  // ignore: non_constant_identifier_names
+  static final int SIZE = MemoryPoolHeader.HEADER_SIZE;
+
+  /// Number of extra bytes allocated which will force a block split.
+  // ignore: non_constant_identifier_names
+  static final int _SPLIT_THRESHOLD = 512;
+
   final MemoryPoolHeader _header;
   final RandomAccessFile _file;
   final _pointers = <Pointer>[];
 
+  /// Create a memory pool
   MemoryPool(this._file, offset) : _header = MemoryPoolHeader(offset) {
     final length = _file.lengthSync();
     if (length < _header.end) {
@@ -60,8 +82,13 @@ class MemoryPool {
     }
   }
 
+  /// Get the end of the header/memory pool
   int get end => _header.end;
+
+  /// Get the number of pointers
   int get length => _pointers.length;
+
+  /// Get a given pointer
   Pointer operator [](int index) => _pointers[index];
 
   /// Remove all pointers and clear the pointer page
@@ -85,7 +112,7 @@ class MemoryPool {
       if (_pointers[i].length >= size) {
         var ptr = _pointers.removeAt(i);
         // Split a big block to help with data reuse
-        if (ptr.length - size > SPLIT_THRESHOLD) {
+        if (ptr.length - size > _SPLIT_THRESHOLD) {
           free(Pointer(ptr.offset + size, ptr.length - size));
           ptr = Pointer(ptr.offset, size);
         }

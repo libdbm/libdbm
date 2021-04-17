@@ -2,9 +2,13 @@ import 'dart:typed_data';
 
 /// DBM specific exception.
 class DBMException implements Exception {
+  /// The code associated with the exception
   final int code;
+
+  /// The message associated with the exception
   final String message;
 
+  /// Constructor
   DBMException(this.code, this.message);
 
   @override
@@ -70,6 +74,6 @@ abstract class DBM {
   /// Flush all data to external storage.
   void flush();
 
-  // [flush()] and close the underlying file.
+  /// [flush()] and close the underlying file.
   void close();
 }

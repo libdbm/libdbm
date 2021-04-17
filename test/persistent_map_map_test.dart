@@ -6,7 +6,7 @@ import 'package:collection/collection.dart';
 import 'package:libdbm/libdbm.dart';
 
 void main() {
-  File file = File('dummy.bin');
+  var file = File('dummy.bin');
   Map<String, Map<String, dynamic>> map = {};
   final faker = Faker();
   final keys = faker.lorem
@@ -28,26 +28,31 @@ void main() {
           })
       .toList();
   bool valuesContains(Map<String, dynamic> value) {
-    for (var v in values)
+    for (var v in values) {
       if (DeepCollectionEquality().equals(v, value)) return true;
+    }
     return false;
   }
 
   setUpAll(() async {
-    if (file.existsSync())
+    if (file.existsSync()) {
       try {
         file.deleteSync(recursive: true);
-      } finally {}
+        // ignore: avoid_catches_without_on_clauses
+      } catch (e) {} finally {}
+    }
     file.createSync(recursive: true);
     map = PersistentMap.withMapValue(file,
         comparator: (a, b) => DeepCollectionEquality().equals(a, b));
   });
   tearDownAll(() async {
     (map as PersistentMap).close();
-    if (file.existsSync())
+    if (file.existsSync()) {
       try {
         file.deleteSync(recursive: true);
-      } finally {}
+        // ignore: avoid_catches_without_on_clauses
+      } catch (e) {} finally {}
+    }
   });
   group('Map value map', () {
     test('Test insertion', () {
@@ -60,22 +65,30 @@ void main() {
       expect(map.isNotEmpty, isTrue);
     });
     test('Test key/value contains', () {
-      for (var key in keys) expect(map.containsKey(key), isTrue);
-      for (var value in values) expect(map.containsValue(value), isTrue);
+      for (var key in keys) {
+        expect(map.containsKey(key), isTrue);
+      }
+      for (var value in values) {
+        expect(map.containsValue(value), isTrue);
+      }
     });
     test('Test insertion from map', () {
-      Map<String, Map<String, dynamic>> other = {};
+      var other = <String, Map<String, dynamic>>{};
       faker.lorem
           .words(10)
-          .map((e) => e + '::' + faker.lorem.word())
+          .map((e) => '$e::${faker.lorem.word()}')
           .forEach((e) {
         other[e] = {
           's': faker.lorem.sentence(),
         };
       });
       map.addAll(other);
-      for (var e in other.entries) expect(map[e.key], equals(e.value));
-      for (var k in other.keys) map.remove(k);
+      for (var e in other.entries) {
+        expect(map[e.key], equals(e.value));
+      }
+      for (var k in other.keys) {
+        map.remove(k);
+      }
     });
     test('Test iteration over values', () {
       map.forEach((key, value) {
@@ -84,12 +97,12 @@ void main() {
       });
     });
     test('Test iteration keys and values', () {
-      map.keys.forEach((key) {
+      for(var key in map.keys) {
         expect(keys.contains(key), isTrue);
-      });
-      map.values.forEach((value) {
+      };
+      for(var value in map.values) {
         expect(valuesContains(value), isTrue);
-      });
+      };
     });
     test('Test removing keys', () {
       final value = {'qux': 1234};
@@ -106,30 +119,43 @@ void main() {
     test('Test removing with filter', () {
       final newKeys = faker.lorem
           .words(10)
-          .map((e) => e + '-' + faker.lorem.word())
+          .map((e) => '$e-${faker.lorem.word()}')
           .toList();
-      for (var key in newKeys) map[key] = {'k': key};
-
-      for (var key in newKeys) expect(map.containsKey(key), isTrue);
-      for (var key in keys) expect(map.containsKey(key), isTrue);
-
+      for (var key in newKeys) {
+        map[key] = {'k': key};
+      }
+      for (var key in newKeys) {
+        expect(map.containsKey(key), isTrue);
+      }
+      for (var key in keys) {
+        expect(map.containsKey(key), isTrue);
+      }
       map.removeWhere((key, value) => newKeys.contains(key));
-
-      for (var key in newKeys) expect(map.containsKey(key), isFalse);
-      for (var key in keys) expect(map.containsKey(key), isTrue);
+      for (var key in newKeys) {
+        expect(map.containsKey(key), isFalse);
+      }
+      for (var key in keys) {
+        expect(map.containsKey(key), isTrue);
+      }
     });
     test('Test putIfAbsent', () {
       final newKeys = faker.lorem
           .words(10)
-          .map((e) => e + '-' + faker.lorem.word())
+          .map((e) => '$e-${faker.lorem.word()}')
           .toList();
       for (var key in keys) {
         map.putIfAbsent(key, () => {'k': 'should not happen'});
         expect(map[key] != 'this should not happen', isTrue);
       }
-      for (var key in newKeys) map.putIfAbsent(key, () => {'k': key});
-      for (var key in newKeys) expect(map[key], equals({'k': key}));
-      for (var key in newKeys) map.remove(key);
+      for (var key in newKeys) {
+        map.putIfAbsent(key, () => {'k': key});
+      }
+      for (var key in newKeys) {
+        expect(map[key], equals({'k': key}));
+      }
+      for (var key in newKeys) {
+        map.remove(key);
+      }
     });
     test('Test update of values by key', () {
       var ret = map.update('foobar', (v) => {'k': 'baz'},
@@ -141,9 +167,9 @@ void main() {
       map.remove('foobar');
     });
     test('Test update all values', () {
-      map.updateAll((key, value) => {'k': key + '- updated'});
+      map.updateAll((key, value) => {'k': '$key- updated'});
       map.forEach((key, value) {
-        expect(value, equals({'k': key + '- updated'}));
+        expect(value, equals({'k': '$key- updated'}));
       });
     });
     test('Test clearing map', () {

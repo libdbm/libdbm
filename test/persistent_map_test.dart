@@ -6,16 +6,20 @@ import 'package:libdbm/libdbm.dart';
 void main() {
   var file = File('dummy.bin');
   setUp(() async {
-    if (file.existsSync())
+    if (file.existsSync()) {
       try {
         file.deleteSync(recursive: true);
-      } finally {}
+        // ignore: avoid_catches_without_on_clauses
+      } catch (e) {} finally {}
+    }
   });
   tearDown(() async {
-    if (file.existsSync())
+    if (file.existsSync()) {
       try {
         file.deleteSync(recursive: true);
-      } finally {}
+        // ignore: avoid_catches_without_on_clauses
+      } catch (e) {} finally {}
+    }
   });
   test('Test create flag', () {
     expect(() => PersistentMap.withStringValue(file), throwsStateError);

@@ -1,13 +1,14 @@
-import 'dart:io';
 import 'dart:convert' show utf8;
-import 'package:test/test.dart';
+import 'dart:io';
+
 import 'package:faker/faker.dart';
-
 import 'package:libdbm/libdbm.dart';
+import 'package:test/test.dart';
 
-const int COUNT = 10000;
+// ignore: constant_identifier_names
+const COUNT = 10000;
 void main() {
-  File file = File('dummy.bin');
+  final file = File('dummy.bin');
   final faker = Faker();
   int writeRecords(HashDBM db, int count) {
     var size = 0;
@@ -40,10 +41,20 @@ void main() {
   }
 
   setUp(() async {
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    if (file.existsSync()) {
+      try {
+        file.deleteSync(recursive: true);
+        // ignore: avoid_catches_without_on_clauses
+      } catch (e) {} finally {}
+    }
   });
   tearDown(() async {
-    if (file.existsSync()) file.deleteSync(recursive: true);
+    if (file.existsSync()) {
+      try {
+        file.deleteSync(recursive: true);
+        // ignore: avoid_catches_without_on_clauses
+      } catch (e) {} finally {}
+    }
   });
   test('Create and retrieve with timing', () {
     final count = 10000;
@@ -209,6 +220,7 @@ void main() {
     db.close();
   });
   test('Stress mempool by deleting large numbers of records.', () {
+    // ignore: constant_identifier_names
     const MAX = 500;
     final db = HashDBM(file.openSync(mode: FileMode.write), flush: false);
     for (var i = 0; i < MAX; i++) {
@@ -291,7 +303,9 @@ void main() {
     db.close();
   });
   test('Stress test with small hash table.', () {
+    // ignore: constant_identifier_names
     const CYCLES = 10;
+    // ignore: constant_identifier_names
     const MAX = 10000;
 
     final db = HashDBM(file.openSync(mode: FileMode.write),

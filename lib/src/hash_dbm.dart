@@ -3,24 +3,41 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import '../dbm.dart';
+import 'hash_record_pool.dart';
 import 'io.dart';
 import 'memory_pool.dart';
 import 'record_pool.dart';
-import 'hash_record_pool.dart';
 
+/// Header block for a hashed DBM implementation
 class HashHeader extends Block {
-  static int MAGIC = 0xda7aba5eda7afeed;
-  static int VERSION = 0x00010001;
-  static int SIZE = 256;
+  /// Magic number
+  // ignore: non_constant_identifier_names
+  static final int MAGIC = 0xda7aba5eda7afeed;
 
-  static int MAGIC_OFFSET = 0;
-  static int VERSION_OFFSET = MAGIC_OFFSET + 8;
-  static int BUCKET_COUNT_OFFSET = VERSION_OFFSET + 4;
-  static int RECORD_COUNT_OFFSET = BUCKET_COUNT_OFFSET + 4;
-  static int BYTE_COUNT_OFFSET = RECORD_COUNT_OFFSET + 8;
-  static int MODIFIED_OFFSET = BYTE_COUNT_OFFSET + 8;
-  static int MEMPOOL_OFFSET = MODIFIED_OFFSET + 8;
+  /// Version number
+  // ignore: non_constant_identifier_names
+  static final int VERSION = 0x00010008;
 
+  /// Header size
+  // ignore: non_constant_identifier_names
+  static final int SIZE = 256;
+
+  // ignore: non_constant_identifier_names
+  static final int _MAGIC_OFFSET = 0;
+  // ignore: non_constant_identifier_names
+  static final int _VERSION_OFFSET = _MAGIC_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _BUCKET_COUNT_OFFSET = _VERSION_OFFSET + 4;
+  // ignore: non_constant_identifier_names
+  static final int _RECORD_COUNT_OFFSET = _BUCKET_COUNT_OFFSET + 4;
+  // ignore: non_constant_identifier_names
+  static final int _BYTE_COUNT_OFFSET = _RECORD_COUNT_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _MODIFIED_OFFSET = _BYTE_COUNT_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _MEMPOOL_OFFSET = _MODIFIED_OFFSET + 8;
+
+  /// Constructor
   HashHeader(int size) : super(Pointer(0, SIZE), Uint8List(SIZE)) {
     magic = MAGIC;
     version = VERSION;
@@ -31,31 +48,42 @@ class HashHeader extends Block {
     modified = DateTime.now().millisecondsSinceEpoch;
   }
 
-  int get magic => data.getUint64(MAGIC_OFFSET);
-  set magic(int v) => data.setUint64(MAGIC_OFFSET, v);
+  /// Access to the underlying magic number
+  int get magic => data.getUint64(_MAGIC_OFFSET);
+  set magic(int v) => data.setUint64(_MAGIC_OFFSET, v);
 
-  int get version => data.getUint32(VERSION_OFFSET);
-  set version(int v) => data.setUint32(VERSION_OFFSET, v);
+  /// Access to the underlying version number
+  int get version => data.getUint32(_VERSION_OFFSET);
+  set version(int v) => data.setUint32(_VERSION_OFFSET, v);
 
-  int get modified => data.getUint64(MODIFIED_OFFSET);
-  set modified(int v) => data.setUint64(MODIFIED_OFFSET, v);
+  /// Access to the last modification date
+  int get modified => data.getUint64(_MODIFIED_OFFSET);
+  set modified(int v) => data.setUint64(_MODIFIED_OFFSET, v);
 
-  int get numBuckets => data.getUint32(BUCKET_COUNT_OFFSET);
-  set numBuckets(int v) => data.setUint32(BUCKET_COUNT_OFFSET, v);
+  /// Access to the number of buckets used for hashing ids to records
+  int get numBuckets => data.getUint32(_BUCKET_COUNT_OFFSET);
+  set numBuckets(int v) => data.setUint32(_BUCKET_COUNT_OFFSET, v);
 
-  int get numBytes => data.getUint64(BYTE_COUNT_OFFSET);
-  set numBytes(int v) => data.setUint64(BYTE_COUNT_OFFSET, max(0, v));
+  /// Access to the number of bytes used by records in the database. This is not
+  /// 100% accurate
+  int get numBytes => data.getUint64(_BYTE_COUNT_OFFSET);
+  set numBytes(int v) => data.setUint64(_BYTE_COUNT_OFFSET, max(0, v));
 
-  int get numRecords => data.getUint64(RECORD_COUNT_OFFSET);
-  set numRecords(int v) => data.setUint64(RECORD_COUNT_OFFSET, v);
+  /// Access to the number of records stored in the database.
+  int get numRecords => data.getUint64(_RECORD_COUNT_OFFSET);
+  set numRecords(int v) => data.setUint64(_RECORD_COUNT_OFFSET, v);
 
-  int get memPoolOffset => data.getUint64(MEMPOOL_OFFSET);
-  set memPoolOffset(int v) => data.setUint64(MEMPOOL_OFFSET, v);
+  /// Access to the offset to the memory pool data. The records start
+  /// immediately after this.
+  int get memPoolOffset => data.getUint64(_MEMPOOL_OFFSET);
+  set memPoolOffset(int v) => data.setUint64(_MEMPOOL_OFFSET, v);
 }
 
 /// Hash-based implementation of [DBM]
 class HashDBM implements DBM {
-  static int VERSION = HashHeader.VERSION;
+  /// Version of the database
+  // ignore: non_constant_identifier_names
+  static final int VERSION = HashHeader.VERSION;
 
   final RandomAccessFile _file;
   final HashHeader _header;
