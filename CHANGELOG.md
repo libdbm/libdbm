@@ -39,3 +39,7 @@
 * Fixed README to align with null-safe API.
 * Fixed pedantic errors.
 
+## [0.2.0] - Clean up
+
+* Added a LICENSE files.
+* Fixed some formatting issues.

@@ -239,7 +239,7 @@ class PersistentMap<K, V> implements Map<K, V> {
 
   @override
   void forEach(void Function(K key, V value) action) {
-    for(var e in entries) {
+    for (var e in entries) {
       action(e.key, e.value);
     }
   }
@@ -276,9 +276,10 @@ class PersistentMap<K, V> implements Map<K, V> {
   @override
   void removeWhere(bool test(K key, V value)) {
     final remove = [];
-    for(var e in entries) {
+    for (var e in entries) {
       if (test(e.key, e.value)) remove.add(e.key);
-    };
+    }
+    ;
     for (var k in remove) {
       _dbm.remove(_keySerializer(k));
     }
@@ -319,10 +320,11 @@ class PersistentMap<K, V> implements Map<K, V> {
   @override
   Map<K2, V2> map<K2, V2>(MapEntry<K2, V2> Function(K key, V value) convert) {
     var result = <K2, V2>{};
-    for(var e in entries) {
+    for (var e in entries) {
       final entry = convert(e.key, e.value);
       result[entry.key] = entry.value;
-    };
+    }
+    ;
     return result;
   }
 }

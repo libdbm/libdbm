@@ -1,9 +1,9 @@
 import 'dart:io';
+import 'package:libdbm/src/io.dart';
+import 'package:libdbm/src/memory_pool.dart';
+import 'package:libdbm/src/util.dart';
 import 'package:test/test.dart';
 
-import 'package:libdbm/src/memory_pool.dart';
-import 'package:libdbm/src/io.dart';
-import 'package:libdbm/src/util.dart';
 
 void main() {
   final file = File('dummy.bin');

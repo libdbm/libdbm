@@ -1,7 +1,6 @@
 import 'dart:io';
-import 'package:test/test.dart';
-
 import 'package:libdbm/libdbm.dart';
+import 'package:test/test.dart';
 
 void main() {
   var file = File('dummy.bin');
@@ -10,7 +9,8 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
-      } catch (e) {} finally {}
+      } catch (e) {
+      } finally {}
     }
   });
   tearDown(() async {
@@ -18,7 +18,8 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
-      } catch (e) {} finally {}
+      } catch (e) {
+      } finally {}
     }
   });
   test('Test create flag', () {

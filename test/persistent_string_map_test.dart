@@ -1,12 +1,11 @@
 import 'dart:io';
-import 'package:test/test.dart';
 import 'package:faker/faker.dart';
-
 import 'package:libdbm/libdbm.dart';
+import 'package:test/test.dart';
 
 void main() {
   var file = File('dummy.bin');
-  var map = <String,String>{};
+  var map = <String, String>{};
   final faker = Faker();
   final keys = faker.lorem
       .words(10)
@@ -18,7 +17,8 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
-      } catch (e) {} finally {}
+      } catch (e) {
+      } finally {}
     }
     file.createSync(recursive: true);
     map = PersistentMap.withStringValue(file);
@@ -29,7 +29,8 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
-      } catch (e) {} finally {}
+      } catch (e) {
+      } finally {}
     }
   });
   group('String map', () {
@@ -74,12 +75,14 @@ void main() {
       });
     });
     test('Test iteration keys and values', () {
-      for(var key in map.keys) {
+      for (var key in map.keys) {
         expect(keys.contains(key), isTrue);
-      };
-      for(var value in map.values) {
+      }
+      ;
+      for (var value in map.values) {
         expect(values.contains(value), isTrue);
-      };
+      }
+      ;
     });
     test('Test removing keys', () {
       map['foobar'] = 'qux';
@@ -93,10 +96,8 @@ void main() {
       expect(map.containsValue('qux'), isFalse);
     });
     test('Test removing with filter', () {
-      final newKeys = faker.lorem
-          .words(10)
-          .map((e) => '$e-${faker.lorem.word()}')
-          .toList();
+      final newKeys =
+          faker.lorem.words(10).map((e) => '$e-${faker.lorem.word()}').toList();
       for (var key in newKeys) {
         map[key] = key;
       }
@@ -115,10 +116,8 @@ void main() {
       }
     });
     test('Test putIfAbsent', () {
-      final newKeys = faker.lorem
-          .words(10)
-          .map((e) => '$e-${faker.lorem.word()}')
-          .toList();
+      final newKeys =
+          faker.lorem.words(10).map((e) => '$e-${faker.lorem.word()}').toList();
       for (var key in keys) {
         map.putIfAbsent(key, () => 'should not happen');
         expect(map[key] != 'this should not happen', isTrue);

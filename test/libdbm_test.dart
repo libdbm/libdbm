@@ -45,7 +45,8 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
-      } catch (e) {} finally {}
+      } catch (e) {
+      } finally {}
     }
   });
   tearDown(() async {
@@ -53,27 +54,31 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
-      } catch (e) {} finally {}
+      } catch (e) {
+      } finally {}
     }
   });
   test('Create and retrieve with timing', () {
-    final count = 10000;
-    for (var size in [103, 1009, 10007, 100003]) {
+    final count = 1000000;
+    for (var size in [100003, 1000003, 10000003]) {
       var db = HashDBM(file.openSync(mode: FileMode.write),
-          buckets: size, flush: false, crc: false);
+          buckets: size, flush: false, crc: true);
       var s = Stopwatch();
 
+      print('$size insert $count');
       s.start();
       writeRecords(db, count);
       print('$size insert: ${s.elapsed}');
 
+      print('$size flush $count');
       s.reset();
       db.flush();
-      print('$size flush: ${s.elapsed}');
+      print('$size flush: ${s.elapsed} size: ${db.size()}');
 
+      print('$size read $count');
       s.reset();
       readRecords(db, count);
-      print('$size fetch: ${s.elapsed}');
+      print('$size read: ${s.elapsed}');
 
       s.stop();
       db.close();

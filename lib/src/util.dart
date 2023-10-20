@@ -11,13 +11,20 @@ int align(int size, int alignment) {
 /// Check to see if two lists match exactly. This is done as a function to
 /// allow updates/changes to the matching as needed
 bool matches(Uint8List a, Uint8List b) {
-  if (a.length != b.length) return false;
+  if (identical(a, b)) {
+    return true;
+  }
+
+  if (a.length != b.length) {
+    return false;
+  }
 
   for (var i = 0; i < a.length; i++) {
     if (a[i] != b[i]) {
       return false;
     }
   }
+
   return true;
 }
 
