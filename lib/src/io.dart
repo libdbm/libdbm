@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'constants.dart';
 
 /// Pointer into the underlying storage. Used to simplify tracking elsewhere
 /// and to enforce the limits
@@ -18,11 +19,11 @@ class Pointer {
 
   /// Mask applied to offsets to avoid overflow etc.
   // ignore: non_constant_identifier_names
-  static final int OFFSET_MASK = 0x0fffffffffffffff;
+  static const int OFFSET_MASK = DBMConstants.OFFSET_MASK;
 
   /// Mask applied to length to avoid overflow etc.
   // ignore: non_constant_identifier_names
-  static final int LENGTH_MASK = 0x00000000ffffffff;
+  static const int LENGTH_MASK = DBMConstants.LENGTH_MASK;
 
   final int _offset;
   final int _length;

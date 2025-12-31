@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../dbm.dart';
+import 'constants.dart';
 import 'io.dart';
 import 'memory_pool.dart';
 import 'record_pool.dart';
@@ -11,7 +12,7 @@ import 'util.dart';
 class HashRecordPoolHeader extends Block {
   /// Magic number for the hashed record pool
   // ignore: non_constant_identifier_names
-  static final int MAGIC = 0xa0ba51c0da7aba5e;
+  static const int MAGIC = DBMConstants.HASH_RECORD_POOL_MAGIC;
 
   /// Size of the header
   // ignore: non_constant_identifier_names
@@ -48,7 +49,7 @@ class HashRecordPoolHeader extends Block {
 class RecordBlock extends Block implements Record {
   /// Magic number of a block
   // ignore: non_constant_identifier_names
-  static final int MAGIC = 0xa0c011ec7ed01eaf;
+  static const int MAGIC = DBMConstants.RECORD_BLOCK_MAGIC; 
 
   // ignore: non_constant_identifier_names
   static final int _MAGIC_OFFSET = 0;

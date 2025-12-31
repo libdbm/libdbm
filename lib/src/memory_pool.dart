@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import '../libdbm.dart';
+import 'constants.dart';
 import 'io.dart';
 import 'util.dart';
 
@@ -9,7 +10,7 @@ import 'util.dart';
 class MemoryPoolHeader extends Block {
   /// Magic number of the memory pool
   // ignore: non_constant_identifier_names
-  static final int MAGIC = 0xa0c0a1e5ced0da7a;
+  static const int MAGIC = DBMConstants.MEMORY_POOL_MAGIC;
 
   /// Size of the header for the memory pool
   // ignore: non_constant_identifier_names

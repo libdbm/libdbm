@@ -3,6 +3,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import '../dbm.dart';
+import 'constants.dart'; 
 import 'hash_record_pool.dart';
 import 'io.dart';
 import 'memory_pool.dart';
@@ -12,7 +13,7 @@ import 'record_pool.dart';
 class HashHeader extends Block {
   /// Magic number
   // ignore: non_constant_identifier_names
-  static final int MAGIC = 0xda7aba5eda7afeed;
+  static const int MAGIC = DBMConstants.HASH_DBM_MAGIC;
 
   /// Version number
   // ignore: non_constant_identifier_names
