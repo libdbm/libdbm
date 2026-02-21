@@ -11,7 +11,7 @@ import 'util.dart';
 /// Header for the hash pool
 class HashRecordPoolHeader extends Block {
   /// Magic number for the hashed record pool
-  // ignore: non_constant_identifier_names
+  // ignore: constant_identifier_names
   static const int MAGIC = DBMConstants.HASH_RECORD_POOL_MAGIC;
 
   /// Size of the header
@@ -48,8 +48,8 @@ class HashRecordPoolHeader extends Block {
 /// A block holding a key-value pair
 class RecordBlock extends Block implements Record {
   /// Magic number of a block
-  // ignore: non_constant_identifier_names
-  static const int MAGIC = DBMConstants.RECORD_BLOCK_MAGIC; 
+  // ignore: constant_identifier_names
+  static const int MAGIC = DBMConstants.RECORD_BLOCK_MAGIC;
 
   // ignore: non_constant_identifier_names
   static final int _MAGIC_OFFSET = 0;
@@ -144,13 +144,11 @@ class HashRecordPoolIterator
   final Function(Pointer) _fetcher;
   final PointerBlock _buckets;
   int _index;
-  Pointer _ptr;
   RecordBlock? _current;
 
   /// Constructor
   HashRecordPoolIterator(this._fetcher, this._buckets)
       : _index = 0,
-        _ptr = Pointer.NIL,
         _current = null;
 
   @override
@@ -161,14 +159,20 @@ class HashRecordPoolIterator
 
   @override
   bool moveNext() {
-    _ptr = _current?.next ?? Pointer.NIL;
-    if (_ptr.isEmpty) {
-      while (_index < _buckets.count && (_ptr = _buckets[_index++]).isEmpty) {}
-      if (_ptr.isNotEmpty) {
-        _current = _fetcher(_ptr);
-        return true;
-      }
+    final next = _current?.next;
+    if (next != null && next.isNotEmpty) {
+      _current = _fetcher(next);
+      return true;
     }
+
+    var ptr = Pointer.NIL;
+    while (_index < _buckets.count && (ptr = _buckets[_index++]).isEmpty) {}
+    if (ptr.isNotEmpty) {
+      _current = _fetcher(ptr);
+      return true;
+    }
+
+    _current = null;
     return false;
   }
 }
@@ -182,6 +186,7 @@ class HashRecordPool implements RecordPool {
   final MemoryPool _memoryPool;
   final bool _checkCRC;
   late final PointerBlock _buckets;
+  final _dirty = <int>{};
 
   /// Create a new record pool. [memoryPool] is used to actually allocate
   /// records
@@ -232,6 +237,8 @@ class HashRecordPool implements RecordPool {
         if (last == null) {
           // Head of the chain
           _buckets[bucket] = block.next;
+          _dirty.add(bucket);
+          _buckets.writeAt(_file, bucket);
         } else {
           // Middle or end of the chain
           last.next = block.next;
@@ -270,13 +277,21 @@ class HashRecordPool implements RecordPool {
         ptr = block.next;
       }
       _buckets[i] = Pointer.NIL;
+      _dirty.add(i);
     }
   }
 
   @override
   void flush() {
     _header.write(_file);
-    _buckets.write(_file);
+    if (_dirty.length > _buckets.count ~/ 2) {
+      _buckets.write(_file);
+    } else {
+      for (final index in _dirty) {
+        _buckets.writeAt(_file, index);
+      }
+    }
+    _dirty.clear();
   }
 
   RecordBlock _insertAtTail(Uint8List key, Uint8List value, bool overwrite) {
@@ -290,6 +305,8 @@ class HashRecordPool implements RecordPool {
       if (_checkCRC) ret.setCRC();
       ret.write(_file);
       _buckets[bucket] = ret.pointer;
+      _dirty.add(bucket);
+      _buckets.writeAt(_file, bucket);
       return ret;
     }
 
@@ -307,6 +324,8 @@ class HashRecordPool implements RecordPool {
           ret.write(_file);
 
           _buckets[bucket] = ret.pointer;
+          _dirty.add(bucket);
+          _buckets.writeAt(_file, bucket);
           _memoryPool.free(current.pointer);
 
           // Inserted record is a replacement

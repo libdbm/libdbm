@@ -5,7 +5,7 @@ import 'package:libdbm/libdbm.dart';
 import 'package:test/test.dart';
 
 void main() {
-  var file = File('dummy.bin');
+  var file = File('dummy.persistent_map_map.bin');
   var map = {};
   final faker = Faker();
   final keys = faker.lorem

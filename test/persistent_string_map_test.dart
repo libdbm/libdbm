@@ -4,7 +4,7 @@ import 'package:libdbm/libdbm.dart';
 import 'package:test/test.dart';
 
 void main() {
-  var file = File('dummy.bin');
+  var file = File('dummy.persistent_string_map.bin');
   var map = <String, String>{};
   final faker = Faker();
   final keys = faker.lorem
@@ -46,6 +46,7 @@ void main() {
       expect(map.isNotEmpty, isTrue);
     });
     test('Test map function', () {
+      // ignore: unnecessary_lambdas
       final local = map.map((key, value) => MapEntry(key, value));
       local.forEach((key, value) {
         expect(keys.contains(key), isTrue);

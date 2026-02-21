@@ -3,8 +3,11 @@ import 'dart:typed_data';
 /// Given a size, adjust the size to fit into the specified alignment by
 /// rounding up as needed.
 int align(int size, int alignment) {
+  if (alignment <= 0) {
+    throw ArgumentError.value(alignment, 'alignment', 'must be > 0');
+  }
   size = size.abs();
-  final padding = alignment - (size % alignment);
+  final padding = (alignment - (size % alignment)) % alignment;
   return size + padding;
 }
 

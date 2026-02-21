@@ -4,9 +4,8 @@ import 'package:libdbm/src/memory_pool.dart';
 import 'package:libdbm/src/util.dart';
 import 'package:test/test.dart';
 
-
 void main() {
-  final file = File('dummy.bin');
+  final file = File('dummy.memory_pool.bin');
   setUp(() async {
     if (file.existsSync()) {
       try {
@@ -25,6 +24,7 @@ void main() {
     expect(align(123, 128), equals(128));
     expect(align(150, 128), equals(256));
     expect(align(253, 128), equals(256));
+    expect(align(128, 128), equals(128));
   });
   test('Verify pointer merging', () {
     final r = file.openSync(mode: FileMode.write);

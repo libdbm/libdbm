@@ -18,11 +18,11 @@ class Pointer {
   static final int WIDTH = OFFSET_WIDTH + LENGTH_WIDTH;
 
   /// Mask applied to offsets to avoid overflow etc.
-  // ignore: non_constant_identifier_names
+  // ignore: constant_identifier_names
   static const int OFFSET_MASK = DBMConstants.OFFSET_MASK;
 
   /// Mask applied to length to avoid overflow etc.
-  // ignore: non_constant_identifier_names
+  // ignore: constant_identifier_names
   static const int LENGTH_MASK = DBMConstants.LENGTH_MASK;
 
   final int _offset;
@@ -120,4 +120,11 @@ class PointerBlock extends Block {
     _view[i * 2] = value.offset;
     _view[(i * 2) + 1] = value.length;
   } // set
+
+  /// Write a single pointer entry at [index] to [file]
+  void writeAt(final RandomAccessFile file, final int index) {
+    final start = index * Pointer.WIDTH;
+    file.setPositionSync(offset + start);
+    file.writeFromSync(buffer, start, start + Pointer.WIDTH);
+  }
 }

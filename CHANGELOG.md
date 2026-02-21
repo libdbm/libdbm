@@ -39,6 +39,25 @@
 * Fixed README to align with null-safe API.
 * Fixed pedantic errors.
 
+## [0.2.1] - Robustness, readonly mode, compaction
+
+* Added readonly mode with shared file locking (`readonly` parameter on `HashDBM` and `PersistentMap` factories).
+* Added `compact()` method to truncate trailing free blocks and reclaim disk space.
+* Added header CRC validation with `seal()`/`validate()` to detect header corruption.
+* Added file locking (exclusive for read-write, shared for readonly) with a `Finalizer` safety net.
+* Fixed `put()` to correctly return the previous value instead of the new value.
+* Fixed `putIfAbsent()` to check for existing keys before inserting and to not call the callback when a value exists.
+* Fixed `clear()` to reset `numBytes` to zero.
+* Fixed `align()` to return the input unchanged when already aligned.
+* Fixed memory pool `_write()` to overwrite stale pointers with `Pointer.NIL`.
+* Optimised bucket flush with dirty-tracking to avoid rewriting the entire bucket array on every flush.
+* Added `PointerBlock.writeAt()` for single-entry writes.
+* Bumped version format to `0x00010009`.
+* Bumped minimum SDK constraint to `>=2.17.0`.
+* Removed stale Flutter/transitive dependencies from `pubspec.lock`.
+* Test files now use distinct filenames to avoid collisions.
+* Added regression test suite.
+
 ## [0.2.0] - Clean up
 
 * Added a LICENSE files.

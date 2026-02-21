@@ -9,7 +9,7 @@ import 'util.dart';
 /// Header for the memory pool
 class MemoryPoolHeader extends Block {
   /// Magic number of the memory pool
-  // ignore: non_constant_identifier_names
+  // ignore: constant_identifier_names
   static const int MAGIC = DBMConstants.MEMORY_POOL_MAGIC;
 
   /// Size of the header for the memory pool
@@ -98,9 +98,37 @@ class MemoryPool {
     _header.page = Pointer.NIL;
   }
 
-  /// Write everything to dick
+  /// Write everything to disk
   void flush() {
     _write();
+  }
+
+  /// Truncate trailing free blocks at end-of-file and return bytes reclaimed
+  int compact() {
+    if (_pointers.isEmpty) return 0;
+
+    // Sort by offset ascending to find trailing free blocks
+    _pointers.sort((a, b) => a.offset - b.offset);
+    final length = _file.lengthSync();
+    var reclaimed = 0;
+
+    while (_pointers.isNotEmpty) {
+      final last = _pointers.last;
+      if (last.end + 1 >= length - reclaimed) {
+        reclaimed += last.length;
+        _pointers.removeLast();
+      } else {
+        break;
+      }
+    }
+
+    if (reclaimed > 0) {
+      _file.truncateSync(length - reclaimed);
+    }
+
+    // Restore sort by length ascending
+    _pointers.sort((a, b) => a.length - b.length);
+    return reclaimed;
   }
 
   /// Allocate a block of data. This will look in the list of existing blocks
@@ -150,8 +178,14 @@ class MemoryPool {
 
   /// Flush everything out to disk
   void _write() {
-    if (_pointers.isNotEmpty) {
+    if (_header.page.isEmpty && _pointers.isNotEmpty) {
+      final required = align(_pointers.length, 256) * Pointer.WIDTH;
+      _header.page = allocate(required);
+    }
+
+    if (_header.page.isNotEmpty) {
       var block = PointerBlock(_header.page);
+
       // If we need to allocate/reallocate the pointer block
       if (block.count < _pointers.length) {
         if (_header.page.isNotEmpty) free(_header.page);
@@ -160,12 +194,10 @@ class MemoryPool {
         block = PointerBlock(_header.page);
       }
 
-      // Write all the pointers into the block, including empty pointers
-      for (var i = 0; i < _pointers.length; i++) {
-        block[i] = _pointers[i];
+      // Always overwrite the whole page so stale pointers are never persisted.
+      for (var i = 0; i < block.count; i++) {
+        block[i] = i < _pointers.length ? _pointers[i] : Pointer.NIL;
       }
-
-      // Write the block to the file
       block.write(_file);
     }
     _header.write(_file);

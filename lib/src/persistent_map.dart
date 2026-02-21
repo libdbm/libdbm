@@ -106,14 +106,15 @@ class PersistentMap<K, V> implements Map<K, V> {
   /// already exists, the file will not be overwritten, but rather opened.
   /// If [file] contains and incompatible database, behavior is unspecified.
   static PersistentMap<String, String> withStringValue(final File file,
-      {bool create = false}) {
+      {bool create = false, bool readonly = false}) {
     return make<String, String>(
         file,
         (key) => convert.utf8.encoder.convert(key),
         (bytes) => convert.utf8.decode(bytes),
         (value) => convert.utf8.encoder.convert(value),
         (bytes) => convert.utf8.decode(bytes),
-        create: create);
+        create: create,
+        readonly: readonly);
   }
 
   /// Create a PersistentMap with strings for keys and maps for values,
@@ -126,6 +127,7 @@ class PersistentMap<K, V> implements Map<K, V> {
   static PersistentMap<String, Map<String, dynamic>> withMapValue(
       final File file,
       {bool create = false,
+      bool readonly = false,
       bool Function(Map<String, dynamic>, Map<String, dynamic>)? comparator}) {
     return make<String, Map<String, dynamic>>(
         file,
@@ -134,6 +136,7 @@ class PersistentMap<K, V> implements Map<K, V> {
         (value) => convert.utf8.encoder.convert(convert.json.encode(value)),
         (bytes) => convert.json.decode(convert.utf8.decode(bytes)),
         create: create,
+        readonly: readonly,
         comparator: comparator);
   }
 
@@ -151,17 +154,18 @@ class PersistentMap<K, V> implements Map<K, V> {
       final Uint8List Function(V1) valueSerializer,
       final V1 Function(Uint8List) valueDeserializer,
       {bool create = false,
+      bool readonly = false,
       bool Function(V1, V1)? comparator}) {
-    late final RandomAccessFile _random;
+    late final RandomAccessFile random;
     if (file.existsSync()) {
-      _random = file.openSync(mode: FileMode.append);
+      random = file.openSync(mode: FileMode.append);
     } else if (create) {
       file.createSync(recursive: true);
-      _random = file.openSync(mode: FileMode.write);
+      random = file.openSync(mode: FileMode.write);
     } else {
       throw StateError('File does not exist and create flag not specified.');
     }
-    DBM dbm = HashDBM(_random);
+    DBM dbm = HashDBM(random, readonly: readonly);
     return PersistentMap<K1, V1>(
         dbm, keySerializer, keyDeserializer, valueSerializer, valueDeserializer,
         valueComparator: comparator);
@@ -260,9 +264,13 @@ class PersistentMap<K, V> implements Map<K, V> {
   @override
   V putIfAbsent(K key, V Function() ifAbsent) {
     assert(key != null);
+    final k = _keySerializer(key);
+    final existing = _dbm.get(k);
+    if (existing != null) return _valueDeserializer(existing);
+
     final value = ifAbsent();
     assert(value != null, 'value from isAbsent() is null');
-    final ret = _dbm.putIfAbsent(_keySerializer(key), _valueSerializer(value));
+    final ret = _dbm.putIfAbsent(k, _valueSerializer(value));
     return _valueDeserializer(ret);
   }
 

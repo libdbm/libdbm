@@ -33,11 +33,12 @@ abstract class DBM {
   Uint8List? remove(Uint8List key);
 
   /// Add a [key], [value] pair to the underlying store, overwriting any
-  /// existing values. Returns the old value if one existed.
+  /// existing values. Returns the old value if one existed, otherwise
+  /// returns the new value.
   /// ```dart
-  /// put(utf8.encode('foo',utf8.encode('bar');
-  /// put(utf8.encode('foo',utf8.encode('baz'); // returns 'bar'
-  /// get(utf8.encode('foo'); // returns 'baz'
+  /// put(utf8.encode('foo'), utf8.encode('bar')); // returns 'bar' (new)
+  /// put(utf8.encode('foo'), utf8.encode('baz')); // returns 'bar' (old)
+  /// get(utf8.encode('foo')); // returns 'baz'
   /// ```
   Uint8List? put(Uint8List key, Uint8List value);
 
@@ -70,6 +71,9 @@ abstract class DBM {
   /// Erases all data and resets the internal structure, but does not reclaim
   /// storage.
   void clear();
+
+  /// Truncate trailing free blocks at end-of-file and return bytes reclaimed.
+  int compact();
 
   /// Flush all data to external storage.
   void flush();
