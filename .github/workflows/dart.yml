@@ -19,6 +19,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
+      - name: Install unzip
+        run: apt-get update && apt-get install -y unzip
       - uses: dart-lang/setup-dart@v1
         with:
            sdk: "stable"
