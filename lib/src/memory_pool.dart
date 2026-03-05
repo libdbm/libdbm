@@ -107,8 +107,7 @@ class MemoryPool {
   int compact() {
     if (_pointers.isEmpty) return 0;
 
-    // Sort by offset ascending to find trailing free blocks
-    _pointers.sort((a, b) => a.offset - b.offset);
+    // List is already sorted by offset ascending
     final length = _file.lengthSync();
     var reclaimed = 0;
 
@@ -126,8 +125,6 @@ class MemoryPool {
       _file.truncateSync(length - reclaimed);
     }
 
-    // Restore sort by length ascending
-    _pointers.sort((a, b) => a.length - b.length);
     return reclaimed;
   }
 
@@ -152,28 +149,37 @@ class MemoryPool {
     return Pointer(_file.lengthSync(), align(size, ALIGNMENT));
   }
 
-  /// Free a pointer. If adjacent block are free, they are merged into larger
+  /// Free a pointer. If adjacent blocks are free, they are merged into larger
   /// blocks to encourage reuse.
   void free(Pointer pointer) {
-    _pointers.add(pointer);
-
-    // Sort by offset ascending
-    _pointers.sort((a, b) => a.offset - b.offset);
-
-    // Merge adjacent blocks
-    for (var i = 0; i < _pointers.length - 1;) {
-      if (_pointers[i].end == _pointers[i + 1].start - 1) {
-        var a = _pointers.removeAt(i);
-        var b = _pointers.removeAt(i);
-        final p = Pointer(a.offset, a.length + b.length);
-        _pointers.insert(i, p);
+    // Insert in offset-sorted position via binary search
+    var lo = 0;
+    var hi = _pointers.length;
+    while (lo < hi) {
+      final mid = (lo + hi) >> 1;
+      if (_pointers[mid].offset < pointer.offset) {
+        lo = mid + 1;
       } else {
-        i += 1;
+        hi = mid;
       }
     }
+    _pointers.insert(lo, pointer);
 
-    // Sort by length ascending
-    _pointers.sort((a, b) => a.length - b.length);
+    // Merge with right neighbour
+    if (lo + 1 < _pointers.length &&
+        _pointers[lo].end == _pointers[lo + 1].start - 1) {
+      final a = _pointers.removeAt(lo);
+      final b = _pointers.removeAt(lo);
+      _pointers.insert(lo, Pointer(a.offset, a.length + b.length));
+    }
+
+    // Merge with left neighbour
+    if (lo > 0 &&
+        _pointers[lo - 1].end == _pointers[lo].start - 1) {
+      final a = _pointers.removeAt(lo - 1);
+      final b = _pointers.removeAt(lo - 1);
+      _pointers.insert(lo - 1, Pointer(a.offset, a.length + b.length));
+    }
   }
 
   /// Flush everything out to disk

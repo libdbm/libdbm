@@ -38,10 +38,11 @@ void main() {
     pool.free(Pointer(100, 100));
 
     expect(pool.length, equals(2));
-    expect(pool[0].offset, equals(350));
-    expect(pool[0].length, equals(100));
-    expect(pool[1].offset, equals(0));
-    expect(pool[1].length, equals(300));
+    // Free list is sorted by offset ascending
+    expect(pool[0].offset, equals(0));
+    expect(pool[0].length, equals(300));
+    expect(pool[1].offset, equals(350));
+    expect(pool[1].length, equals(100));
 
     r.closeSync();
   });

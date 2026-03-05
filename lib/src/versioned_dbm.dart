@@ -63,6 +63,9 @@ class VersionedHashDBM implements VersionedDBM {
           400, 'Cannot merge through $target: current is ${_store.current}');
     }
 
+    // Suppress per-op flushing during bulk merge
+    _dbm.batch = true;
+
     // Apply deltas to base table in order
     final entries = _store.through(target);
     // Reverse so we apply oldest first
@@ -78,19 +81,23 @@ class VersionedHashDBM implements VersionedDBM {
       }
     }
 
+    _dbm.batch = false;
+
     // Free delta blocks and remove version entries
     final removed = _store.removeTo(target);
     for (final entry in removed) {
       _dbm.pool.free(entry.delta);
     }
 
-    // Persist version list
+    // Persist version list — write new list, flush header, then free old
     final old = _dbm.header.list;
     final pointer = _store.write(old);
     _dbm.header.list = pointer;
     _dbm.header.counter = _store.current;
-
     _flush();
+    if (old.isNotEmpty && old != pointer) {
+      _dbm.pool.free(old);
+    }
   }
 
   @override
@@ -213,14 +220,15 @@ class VersionedHashDBM implements VersionedDBM {
     // Append to version list
     _store.append(VersionEntry(version, timestamp, pointer));
 
-    // Write version list
+    // Write version list — flush header before freeing old block
     final old = _dbm.header.list;
     final listPtr = _store.write(old);
     _dbm.header.list = listPtr;
     _dbm.header.counter = version;
-
-    // Flush everything
     _flush();
+    if (old.isNotEmpty && old != listPtr) {
+      _dbm.pool.free(old);
+    }
   }
 
   /// Iterate entries at a specific version, merging base + deltas.

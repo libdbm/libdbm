@@ -40,12 +40,15 @@ void main() {
     expect(map['foo'], equals('bar'));
     map.close();
   });
-  test('Test asserts', () {
+  test('wrong key type returns null or false', () {
     var map = PersistentMap.withStringValue(file, create: true);
 
-    expect(() => map[null], throwsA(isA<AssertionError>()));
-    expect(() => map.remove(null), throwsA(isA<AssertionError>()));
-    expect(() => map.containsKey(null), throwsA(isA<AssertionError>()));
+    expect(map[null], isNull);
+    expect(map[123], isNull);
+    expect(map.remove(null), isNull);
+    expect(map.remove(123), isNull);
+    expect(map.containsKey(null), isFalse);
+    expect(map.containsKey(123), isFalse);
     expect(() => map.containsValue(null), throwsA(isA<AssertionError>()));
     expect(() => map.update('foo', (v) => 'bar', ifAbsent: null),
         throwsA(isA<AssertionError>()));

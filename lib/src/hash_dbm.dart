@@ -145,6 +145,9 @@ class HashDBM implements DBM {
   final bool _readonly;
   bool _closed = false;
 
+  /// Suppress per-operation flushing for bulk operations.
+  bool batch = false;
+
   late final RecordPool _recordPool;
   late final MemoryPool _memoryPool;
 
@@ -171,6 +174,9 @@ class HashDBM implements DBM {
     final existing = length >= _header.length;
     if (existing) {
       _header.read(_file);
+    } else if (readonly) {
+      throw DBMException(
+          403, 'Cannot open a new file in readonly mode');
     }
     if (_header.magic != HashHeader.MAGIC) {
       throw DBMException(500, 'HashHeader magic mismatch: ${_header.magic}');
@@ -287,32 +293,33 @@ class HashDBM implements DBM {
   @override
   Uint8List putIfAbsent(Uint8List key, Uint8List value) {
     _guard();
-    final existing = _recordPool.get(key) as RecordBlock?;
-    if (existing != null) return existing.value;
-
     final record = _recordPool.put(key, value, false) as RecordBlock;
-    _header.numBytes += record.size;
-    _header.numRecords += 1;
-    if (_flush) flush();
+    if (record.isNew) {
+      _header.numBytes += record.size;
+      _header.numRecords += 1;
+      if (_flush) flush();
+    }
     return record.value;
   }
 
   @override
   Uint8List? put(Uint8List key, Uint8List value) {
     _guard();
-    final existing = _recordPool.get(key) as RecordBlock?;
-    final previous = existing?.value;
-    final oldSize = existing?.size ?? 0;
-
-    _recordPool.put(key, value, true);
-    final current = _recordPool.get(key) as RecordBlock;
-
-    _header.numBytes += current.size - oldSize;
-    if (existing == null) {
+    final result = _recordPool.put(key, value, true) as RecordBlock;
+    if (result.isNew) {
+      // New insert — result is the new record
+      _header.numBytes += result.size;
       _header.numRecords += 1;
+      if (_flush && !batch) flush();
+      return result.value;
+    } else {
+      // Overwrite — result is the old record
+      final previous = result.value;
+      final current = _recordPool.get(key) as RecordBlock;
+      _header.numBytes += current.size - result.size;
+      if (_flush && !batch) flush();
+      return previous;
     }
-    if (_flush) flush();
-    return previous ?? current.value;
   }
 
   @override
@@ -322,7 +329,7 @@ class HashDBM implements DBM {
     if (record != null) _recordPool.free(record);
     _header.numRecords -= record == null ? 0 : 1;
     _header.numBytes -= record == null ? 0 : record.size;
-    if (_flush) flush();
+    if (_flush && !batch) flush();
     return record?.value;
   }
 
@@ -338,6 +345,7 @@ class HashDBM implements DBM {
   void flush() {
     _memoryPool.flush();
     _recordPool.flush();
+    _header.modified = DateTime.now().millisecondsSinceEpoch;
     _header.seal();
     _header.write(_file);
     _file.flushSync();

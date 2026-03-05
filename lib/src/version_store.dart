@@ -117,6 +117,8 @@ class VersionStore {
   }
 
   /// Write the version list to disk, returning the new pointer.
+  /// The caller is responsible for freeing [old] after the header
+  /// that references the returned pointer has been durably flushed.
   Pointer write(final Pointer old) {
     final needed = align(
         _ENTRIES_OFFSET + _entries.length * _ENTRY_SIZE, MemoryPool.ALIGNMENT);
@@ -125,7 +127,6 @@ class VersionStore {
     if (old.isNotEmpty && old.length >= needed) {
       pointer = old;
     } else {
-      if (old.isNotEmpty) _pool.free(old);
       pointer = _pool.allocate(needed);
     }
 

@@ -71,5 +71,12 @@
 * Added `flatten()` — merge all deltas and convert back to plain `HashDBM` format.
 * Added `DeltaBlock` and `VersionStore` for on-disk delta storage.
 * New exports: `VersionedDBM`, `VersionedHashDBM`, `Transaction`.
+* Fixed: opening a new (empty) file with `readonly: true` now throws instead of creating a corrupt file.
+* Fixed: `modified()` timestamp now updates on every flush.
+* Fixed: `PersistentMap` `[]`, `containsKey`, and `remove` return null/false for wrong key types instead of throwing `TypeError`.
+* Fixed: crash-consistency risk where old version-list blocks could be freed before the new header pointer was durably committed.
+* Improved: `merge()` now suppresses per-operation flushing, eliminating severe write amplification.
+* Improved: `put()` and `putIfAbsent()` eliminate redundant key lookups.
+* Improved: `MemoryPool.free()` uses binary-search insertion instead of full re-sort.
 
 

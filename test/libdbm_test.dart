@@ -339,5 +339,16 @@ void main() {
       db.close();
     }
   });
-  // TODO: Negative tests
+  test('readonly on new file throws', () {
+    final fresh = File('dummy.readonly_new.bin');
+    if (fresh.existsSync()) fresh.deleteSync();
+    final raf = fresh.openSync(mode: FileMode.write);
+    expect(
+      () => HashDBM(raf, readonly: true),
+      throwsA(isA<DBMException>()
+          .having((final e) => e.code, 'code', 403)),
+    );
+    raf.closeSync();
+    if (fresh.existsSync()) fresh.deleteSync();
+  });
 }

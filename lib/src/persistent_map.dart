@@ -178,8 +178,8 @@ class PersistentMap<K, V> implements Map<K, V> {
 
   @override
   V? operator [](Object? key) {
-    assert(key != null);
-    final ret = _dbm.get(_keySerializer(key as K));
+    if (key is! K) return null;
+    final ret = _dbm.get(_keySerializer(key));
     return ret != null ? _valueDeserializer(ret) : null;
   }
 
@@ -215,8 +215,8 @@ class PersistentMap<K, V> implements Map<K, V> {
   }
 
   @override
-  bool containsKey(dynamic key) {
-    assert(key != null);
+  bool containsKey(Object? key) {
+    if (key is! K) return false;
     return _dbm.get(_keySerializer(key)) != null;
   }
 
@@ -276,8 +276,8 @@ class PersistentMap<K, V> implements Map<K, V> {
 
   @override
   V? remove(Object? key) {
-    assert(key != null);
-    final ret = _dbm.remove(_keySerializer(key as K));
+    if (key is! K) return null;
+    final ret = _dbm.remove(_keySerializer(key));
     return ret != null ? _valueDeserializer(ret) : null;
   }
 
