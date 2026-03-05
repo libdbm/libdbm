@@ -15,15 +15,10 @@ jobs:
     # available. See https://hub.docker.com/r/google/dart/ for the available
     # images.
     container:
-      image:  google/dart:stable
+      image:  google/dart:3.2
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install unzip
-        run: apt-get update && apt-get install -y unzip
-      - uses: dart-lang/setup-dart@v1
-        with:
-           sdk: "stable"
 
       - name: Print Dart SDK version
         run: dart --version
