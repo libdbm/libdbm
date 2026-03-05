@@ -62,3 +62,14 @@
 
 * Added a LICENSE files.
 * Fixed some formatting issues.
+
+## [0.3.0] - Versioned database, merge & flatten
+
+* Added `VersionedHashDBM` — delta-overlay transactions with point-in-time snapshots.
+* Added `Transaction` interface (`begin`, `commit`, `rollback`) for atomic versioned writes.
+* Added `merge()` — compact all (or a range of) deltas into the base table.
+* Added `flatten()` — merge all deltas and convert back to plain `HashDBM` format.
+* Added `DeltaBlock` and `VersionStore` for on-disk delta storage.
+* New exports: `VersionedDBM`, `VersionedHashDBM`, `Transaction`.
+
+

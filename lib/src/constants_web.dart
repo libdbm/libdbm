@@ -14,6 +14,12 @@ class DBMConstants {
   // Memory Pool Header Magic Number - Web-safe
   static const int MEMORY_POOL_MAGIC = 0x0c0a1e5ced0d;
 
+  // Delta Block Magic Number - Web-safe
+  static const int DELTA_BLOCK_MAGIC = 0x0e17ab10c0da;
+
+  // Version List Block Magic Number - Web-safe
+  static const int VERSION_LIST_MAGIC = 0x0e5510911570;
+
   // Offset Mask - JavaScript MAX_SAFE_INTEGER (2^53 - 1)
   static const int OFFSET_MASK = 0x1fffffffffff;
 

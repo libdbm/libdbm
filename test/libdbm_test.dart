@@ -58,7 +58,7 @@ void main() {
       } finally {}
     }
   });
-  test('Create and retrieve with timing', () {
+  test('Create and retrieve with timing', skip: 'Benchmark: run explicitly with --run-skipped', () {
     final count = 1000000;
     for (var size in [100003, 1000003, 10000003]) {
       var db = HashDBM(file.openSync(mode: FileMode.write),

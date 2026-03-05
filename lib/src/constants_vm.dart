@@ -14,6 +14,12 @@ class DBMConstants {
   // Memory Pool Header Magic Number - Full 64-bit
   static const int MEMORY_POOL_MAGIC = 0xa0c0a1e5ced0da7a;
 
+  // Delta Block Magic Number - Full 64-bit
+  static const int DELTA_BLOCK_MAGIC = 0xde17ab10c0da7a01;
+
+  // Version List Block Magic Number - Full 64-bit
+  static const int VERSION_LIST_MAGIC = 0x0e5510911570da7a;
+
   // Offset Mask - Full 64-bit
   static const int OFFSET_MASK = 0x0fffffffffffffff;
 

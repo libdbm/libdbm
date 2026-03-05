@@ -1,5 +1,7 @@
 import 'dart:typed_data';
 
+import 'src/util.dart';
+
 /// DBM specific exception.
 class DBMException implements Exception {
   /// The code associated with the exception
@@ -80,4 +82,72 @@ abstract class DBM {
 
   /// [flush()] and close the underlying file.
   void close();
+}
+
+/// A [DBM] with delta overlay transactions and version history.
+abstract class VersionedDBM implements DBM {
+  /// Start a new transaction.
+  Transaction begin();
+
+  /// Current (latest) version number.
+  int get current;
+
+  /// List of available versions (base..current).
+  List<int> get versions;
+
+  /// Read-only view at a specific version.
+  DBM at(final int version);
+
+  /// Merge deltas through the given version into the base table.
+  /// If [through] is null, merges all deltas through [current].
+  void merge({final int? through});
+
+  /// Merge all deltas into the base table and convert to plain format.
+  /// After flattening, the file can be reopened with plain [HashDBM].
+  void flatten();
+}
+
+/// A transaction that accumulates changes and commits them atomically.
+abstract class Transaction {
+  /// Read a key (sees own uncommitted writes + snapshot).
+  Uint8List? get(final Uint8List key);
+
+  /// Stage a write.
+  void put(final Uint8List key, final Uint8List value);
+
+  /// Stage a delete.
+  void remove(final Uint8List key);
+
+  /// Atomically commit all staged changes as a new version.
+  void commit();
+
+  /// Discard all staged changes.
+  void rollback();
+}
+
+final Uint8List _tombstone = Uint8List(0);
+
+/// Sentinel value used internally to represent a deleted key in a delta.
+Uint8List get tombstone => _tombstone;
+
+/// Check whether a value represents a tombstone (deletion marker).
+bool isTombstone(final Uint8List? value) =>
+    value != null && identical(value, _tombstone);
+
+/// A wrapper that compares [Uint8List] keys by content for use in maps.
+class BytesKey {
+  /// The underlying bytes.
+  final Uint8List bytes;
+
+  /// Constructor.
+  BytesKey(this.bytes);
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  bool operator ==(Object other) =>
+      other is BytesKey && matches(bytes, other.bytes);
+
+  @override
+  // ignore: avoid_equals_and_hash_code_on_mutable_classes
+  int get hashCode => hash(bytes);
 }

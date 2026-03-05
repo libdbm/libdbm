@@ -16,9 +16,13 @@ class HashHeader extends Block {
   // ignore: constant_identifier_names
   static const int MAGIC = DBMConstants.HASH_DBM_MAGIC;
 
-  /// Version number
+  /// Version number (plain format)
   // ignore: non_constant_identifier_names
-  static final int VERSION = 0x00010009;
+  static final int VERSION_PLAIN = 0x00010009;
+
+  /// Version number (versioned format)
+  // ignore: non_constant_identifier_names
+  static final int VERSION_VERSIONED = 0x00020000;
 
   /// Header size
   // ignore: non_constant_identifier_names
@@ -40,16 +44,22 @@ class HashHeader extends Block {
   static final int _MEMPOOL_OFFSET = _MODIFIED_OFFSET + 8;
   // ignore: non_constant_identifier_names
   static final int _CRC_OFFSET = _MEMPOOL_OFFSET + 8;
+  // ignore: non_constant_identifier_names
+  static final int _VERSION_COUNTER_OFFSET = _CRC_OFFSET + 4;
+  // ignore: non_constant_identifier_names
+  static final int _VERSION_LIST_PTR_OFFSET = _VERSION_COUNTER_OFFSET + 8;
 
   /// Constructor
   HashHeader(int size) : super(Pointer(0, SIZE), Uint8List(SIZE)) {
     magic = MAGIC;
-    version = VERSION;
+    version = VERSION_PLAIN;
     numBuckets = size;
     numRecords = 0;
     numBytes = 0;
     memPoolOffset = SIZE;
     modified = DateTime.now().millisecondsSinceEpoch;
+    counter = 0;
+    list = Pointer.NIL;
   }
 
   /// Access to the underlying magic number
@@ -86,6 +96,18 @@ class HashHeader extends Block {
   int get crc => data.getUint32(_CRC_OFFSET);
   set crc(int v) => data.setUint32(_CRC_OFFSET, v);
 
+  /// Access to the version counter for delta overlay transactions
+  int get counter => data.getUint64(_VERSION_COUNTER_OFFSET);
+  set counter(int v) => data.setUint64(_VERSION_COUNTER_OFFSET, v);
+
+  /// Access to the pointer for the version list block
+  Pointer get list => Pointer(data.getUint64(_VERSION_LIST_PTR_OFFSET),
+      data.getUint64(_VERSION_LIST_PTR_OFFSET + 8));
+  set list(Pointer v) {
+    data.setUint64(_VERSION_LIST_PTR_OFFSET, v.offset);
+    data.setUint64(_VERSION_LIST_PTR_OFFSET + 8, v.length);
+  }
+
   /// Compute and store the CRC over the header buffer
   void seal() {
     crc = 0;
@@ -107,7 +129,7 @@ class HashHeader extends Block {
 class HashDBM implements DBM {
   /// Version of the database
   // ignore: non_constant_identifier_names
-  static final int VERSION = HashHeader.VERSION;
+  static final int VERSION = HashHeader.VERSION_PLAIN;
 
   static final Finalizer<RandomAccessFile> _finalizer = Finalizer((final file) {
     try {
@@ -136,7 +158,8 @@ class HashDBM implements DBM {
       {int buckets = 10007,
       bool flush = true,
       bool crc = false,
-      bool readonly = false})
+      bool readonly = false,
+      bool versioned = false})
       : _file = file,
         _flush = flush,
         _readonly = readonly,
@@ -145,7 +168,8 @@ class HashDBM implements DBM {
     _finalizer.attach(this, _file);
 
     final length = file.lengthSync();
-    if (length >= _header.length) {
+    final existing = length >= _header.length;
+    if (existing) {
       _header.read(_file);
     }
     if (_header.magic != HashHeader.MAGIC) {
@@ -153,6 +177,30 @@ class HashDBM implements DBM {
     }
     if (!_header.validate()) {
       throw DBMException(500, 'Header CRC mismatch');
+    }
+
+    // Format version validation
+    final ver = _header.version;
+    if (existing) {
+      if (versioned) {
+        if (ver == HashHeader.VERSION_PLAIN) {
+          // Upgrade plain file to versioned format
+          _header.version = HashHeader.VERSION_VERSIONED;
+        } else if (ver != HashHeader.VERSION_VERSIONED) {
+          throw DBMException(
+              500, 'Unknown format version: 0x${ver.toRadixString(16)}');
+        }
+      } else {
+        if (ver == HashHeader.VERSION_VERSIONED) {
+          throw DBMException(403,
+              'File is a versioned database; open with VersionedHashDBM');
+        } else if (ver != HashHeader.VERSION_PLAIN) {
+          throw DBMException(
+              500, 'Unknown format version: 0x${ver.toRadixString(16)}');
+        }
+      }
+    } else if (versioned) {
+      _header.version = HashHeader.VERSION_VERSIONED;
     }
 
     if (!readonly) {
@@ -179,6 +227,12 @@ class HashDBM implements DBM {
 
   /// Get the underlying file
   RandomAccessFile get file => _file;
+
+  /// Get the header (for versioned overlay access).
+  HashHeader get header => _header;
+
+  /// Get the memory pool (for versioned overlay access).
+  MemoryPool get pool => _memoryPool;
 
   /// Get the number of buckets in the hash table.
   int get hashTableSize => _header.numBuckets;
