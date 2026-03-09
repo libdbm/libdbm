@@ -9,6 +9,7 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
+        // ignore: empty_catches
       } catch (e) {
       } finally {}
     }
@@ -18,6 +19,7 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
+        // ignore: empty_catches
       } catch (e) {
       } finally {}
     }
@@ -43,11 +45,17 @@ void main() {
   test('wrong key type returns null or false', () {
     var map = PersistentMap.withStringValue(file, create: true);
 
+    // ignore: collection_methods_unrelated_type
     expect(map[null], isNull);
+    // ignore: collection_methods_unrelated_type
     expect(map[123], isNull);
+    // ignore: collection_methods_unrelated_type
     expect(map.remove(null), isNull);
+    // ignore: collection_methods_unrelated_type
     expect(map.remove(123), isNull);
+    // ignore: collection_methods_unrelated_type
     expect(map.containsKey(null), isFalse);
+    // ignore: collection_methods_unrelated_type
     expect(map.containsKey(123), isFalse);
     expect(() => map.containsValue(null), throwsA(isA<AssertionError>()));
     expect(() => map.update('foo', (v) => 'bar', ifAbsent: null),

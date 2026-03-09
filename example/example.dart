@@ -11,10 +11,10 @@ void main() {
   final db = HashDBM(file.openSync(mode: FileMode.write));
   db.put(key, value);
   var result = db.get(key);
-  print('${utf8.decode(result!.toList())}');
+  print(utf8.decode(result!.toList()));
   for (var i = db.entries(); i.moveNext();) {
-    print('${utf8.decode(i.current.key)}');
-    print('${utf8.decode(i.current.value)}');
+    print(utf8.decode(i.current.key));
+    print(utf8.decode(i.current.value));
   }
   db.remove(key);
   db.get(key); // will return null

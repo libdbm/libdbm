@@ -70,9 +70,16 @@ class RecordBlock extends Block implements Record {
   // Note, this is used to shortcut the semantics of `putIfAbsent`
   bool _isNew = false;
 
+  /// The old value bytes, captured before an overwrite. Transient field used
+  /// to communicate overwrite results without a second chain walk.
+  Uint8List? replaced;
+
+  /// The old block's allocated size before an overwrite. Transient field.
+  int prior = 0;
+
   /// Create a block from the given data, located at a given offset within
   /// a file.
-  RecordBlock(Pointer pointer, Uint8List buffer) : super(pointer, buffer) {
+  RecordBlock(super.pointer, super.buffer) {
     magic = MAGIC;
     next = Pointer(0, 0);
     keyLength = 0;
@@ -254,6 +261,32 @@ class HashRecordPool implements RecordPool {
   }
 
   @override
+  Record? remove(Uint8List key) {
+    final bucket = hash(key) % _buckets.count;
+    var ptr = _buckets[bucket];
+    RecordBlock? last;
+    while (ptr.isNotEmpty) {
+      var block = _fetch(_file, ptr);
+      if (matches(block.key, key)) {
+        if (last == null) {
+          _buckets[bucket] = block.next;
+          _dirty.add(bucket);
+          _buckets.writeAt(_file, bucket);
+        } else {
+          last.next = block.next;
+          if (_checkCRC) last.setCRC();
+          last.write(_file);
+        }
+        _memoryPool.free(block.pointer);
+        return block;
+      }
+      last = block;
+      ptr = block.next;
+    }
+    return null;
+  }
+
+  @override
   Record? get(Uint8List key) {
     final bucket = hash(key) % _buckets.count;
     var ptr = _buckets[bucket];
@@ -314,46 +347,56 @@ class HashRecordPool implements RecordPool {
     while (ptr.isNotEmpty) {
       var current = _fetch(_file, ptr);
       if (matches(current.key, key)) {
-        if (overwrite == false || matches(current.value, value)) return current;
-        if (previous == null) {
-          // Found at the head of the chain
-          var ret = _create(key, value);
-          ret.next = current.next;
+        if (overwrite == false ||
+            matches(current.value, value)) {
+          return current;
+        }
+        // Capture old value and size before any overwrite.
+        final old = Uint8List.fromList(current.value);
+        final oldSize = current.size;
 
+        // Try in-place overwrite if new data fits.
+        final needed = RecordBlock.required(key, value);
+        if (needed <= current.pointer.length) {
+          current.value = value;
+          if (_checkCRC) current.setCRC();
+          current.write(_file);
+          current.isNew = false;
+          current.replaced = old;
+          current.prior = oldSize;
+          return current;
+        }
+
+        // Need a new block — allocate and link in place of current.
+        var ret = _create(key, value);
+        ret.next = current.next;
+        ret.isNew = false;
+        ret.replaced = old;
+        ret.prior = oldSize;
+
+        if (previous == null) {
+          // Head of the chain.
           if (_checkCRC) ret.setCRC();
           ret.write(_file);
-
           _buckets[bucket] = ret.pointer;
           _dirty.add(bucket);
           _buckets.writeAt(_file, bucket);
-          _memoryPool.free(current.pointer);
-
-          // Inserted record is a replacement
-          current.isNew = false;
-          return current;
         } else {
-          // Found in the middle of the chain
-          var ret = _create(key, value);
+          // Middle of the chain.
           previous.next = ret.pointer;
-          ret.next = current.next;
-
           if (_checkCRC) ret.setCRC();
           ret.write(_file);
-
           if (_checkCRC) previous.setCRC();
           previous.write(_file);
-
-          _memoryPool.free(current.pointer);
-          // Inserted record is a replacement
-          current.isNew = false;
-          return current;
         }
+        _memoryPool.free(current.pointer);
+        return ret;
       }
       previous = current;
       ptr = current.next;
     }
 
-    // If we got here, we are at the end of the chain
+    // End of the chain — append new record.
     var ret = _create(key, value);
     if (_checkCRC) ret.setCRC();
     ret.write(_file);

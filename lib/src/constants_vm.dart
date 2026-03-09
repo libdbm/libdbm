@@ -20,6 +20,12 @@ class DBMConstants {
   // Version List Block Magic Number - Full 64-bit
   static const int VERSION_LIST_MAGIC = 0x0e5510911570da7a;
 
+  // B+Tree Node Magic Number - Full 64-bit
+  static const int BTREE_NODE_MAGIC = 0xb7ee40de50da7a01;
+
+  // B+Tree Meta Magic Number - Full 64-bit
+  static const int BTREE_META_MAGIC = 0xb7ee4e7a50da7a02;
+
   // Offset Mask - Full 64-bit
   static const int OFFSET_MASK = 0x0fffffffffffffff;
 

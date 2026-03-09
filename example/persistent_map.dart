@@ -12,10 +12,10 @@ void main() {
   // standard map operation
   db[key] = value;
   var result = db[key];
-  print('$result');
+  print(result);
   for (var i in db.entries) {
-    print('${i.key}');
-    print('${i.value}');
+    print(i.key);
+    print(i.value);
   }
   db.remove(key);
   db[key]; // will return null

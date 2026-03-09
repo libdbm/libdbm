@@ -63,6 +63,20 @@
 * Added a LICENSE files.
 * Fixed some formatting issues.
 
+## [0.4.0] - B+tree, sorted maps, performance
+
+* Added `BTreeDBM` — disk-based B+tree with sorted iteration, range queries, floor/ceiling lookups.
+* Added `SortedDBM` interface for ordered key-value stores.
+* Added `SortedPersistentMap` — typed `Map` with sorted operations over `BTreeDBM`.
+* Added LRU node cache to `BTreeDBM` (configurable, default 256 entries).
+* Added optional read cache to `HashDBM` (`cache` parameter).
+* Added zero-copy B+tree node decode using buffer views instead of copies.
+* Added in-place record overwrite when new data fits in existing block.
+* Eliminated double hash-chain walk in `put()` and `remove()` (2x fewer I/O reads).
+* Optimised `hash()` to avoid per-byte multiplication and modulo.
+* Switched linter from discontinued `effective_dart` to `lints`.
+* Bumped minimum SDK to `>=3.0.0`.
+
 ## [0.3.0] - Versioned database, merge & flatten
 
 * Added `VersionedHashDBM` — delta-overlay transactions with point-in-time snapshots.

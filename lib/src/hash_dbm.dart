@@ -143,6 +143,7 @@ class HashDBM implements DBM {
   final HashHeader _header;
   final bool _flush;
   final bool _readonly;
+  final int _cacheCapacity;
   bool _closed = false;
 
   /// Suppress per-operation flushing for bulk operations.
@@ -150,6 +151,10 @@ class HashDBM implements DBM {
 
   late final RecordPool _recordPool;
   late final MemoryPool _memoryPool;
+
+  // Read cache: avoids disk I/O for recently accessed keys.
+  // Uses BytesKey for content-based equality.
+  final Map<BytesKey, Uint8List> _cache = {};
 
   /// Open a new database. Optional parameters are: [buckets] which sets the
   /// number of hash buckets to use, [flush] which when set to true will force
@@ -162,10 +167,12 @@ class HashDBM implements DBM {
       bool flush = true,
       bool crc = false,
       bool readonly = false,
-      bool versioned = false})
+      bool versioned = false,
+      int cache = 0})
       : _file = file,
         _flush = flush,
         _readonly = readonly,
+        _cacheCapacity = cache,
         _header = HashHeader(buckets) {
     _file.lockSync(readonly ? FileLock.shared : FileLock.exclusive);
     _finalizer.attach(this, _file);
@@ -246,6 +253,27 @@ class HashDBM implements DBM {
   /// Whether this database is opened in readonly mode
   bool get readonly => _readonly;
 
+  // -- Read cache -----------------------------------------------------------
+
+  Uint8List? _lookup(final Uint8List key) {
+    if (_cacheCapacity <= 0) return null;
+    return _cache[BytesKey(key)];
+  }
+
+  void _store(final Uint8List key, final Uint8List value) {
+    if (_cacheCapacity <= 0) return;
+    final k = BytesKey(Uint8List.fromList(key));
+    _cache[k] = value;
+    while (_cache.length > _cacheCapacity) {
+      _cache.remove(_cache.keys.first);
+    }
+  }
+
+  void _discard(final Uint8List key) {
+    if (_cacheCapacity <= 0) return;
+    _cache.remove(BytesKey(key));
+  }
+
   @override
   int size() {
     return _header.numBytes;
@@ -261,6 +289,7 @@ class HashDBM implements DBM {
   @override
   void clear() {
     _guard();
+    _cache.clear();
     _recordPool.clear();
     _memoryPool.clear();
     _header.numRecords = 0;
@@ -287,7 +316,11 @@ class HashDBM implements DBM {
 
   @override
   Uint8List? get(Uint8List key) {
-    return _recordPool.get(key)?.value;
+    final hit = _lookup(key);
+    if (hit != null) return hit;
+    final value = _recordPool.get(key)?.value;
+    if (value != null) _store(key, value);
+    return value;
   }
 
   @override
@@ -306,29 +339,32 @@ class HashDBM implements DBM {
   Uint8List? put(Uint8List key, Uint8List value) {
     _guard();
     final result = _recordPool.put(key, value, true) as RecordBlock;
+    _discard(key);
+    _store(key, value);
     if (result.isNew) {
-      // New insert — result is the new record
       _header.numBytes += result.size;
       _header.numRecords += 1;
       if (_flush && !batch) flush();
       return result.value;
-    } else {
-      // Overwrite — result is the old record
-      final previous = result.value;
-      final current = _recordPool.get(key) as RecordBlock;
-      _header.numBytes += current.size - result.size;
+    } else if (result.replaced != null) {
+      _header.numBytes += result.size - result.prior;
       if (_flush && !batch) flush();
-      return previous;
+      return result.replaced;
+    } else {
+      // Value unchanged — skip flush.
+      return result.value;
     }
   }
 
   @override
   Uint8List? remove(Uint8List key) {
     _guard();
-    final record = _recordPool.get(key);
-    if (record != null) _recordPool.free(record);
-    _header.numRecords -= record == null ? 0 : 1;
-    _header.numBytes -= record == null ? 0 : record.size;
+    _discard(key);
+    final record = _recordPool.remove(key);
+    if (record != null) {
+      _header.numRecords -= 1;
+      _header.numBytes -= record.size;
+    }
     if (_flush && !batch) flush();
     return record?.value;
   }

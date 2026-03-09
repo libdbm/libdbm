@@ -35,10 +35,24 @@ bool matches(Uint8List a, Uint8List b) {
 /// DBM implementations
 int hash(Uint8List data) {
   var value = 0x238f13af * data.length;
+  var shift = 0;
   for (var i = 0; i < data.length; i++) {
-    value = (value + (data[i] << (i * 5 % 24))) & 0x7fffffff;
+    value = (value + (data[i] << shift)) & 0x7fffffff;
+    shift += 5;
+    if (shift >= 24) shift -= 24;
   }
   return (1103515243 * value + 12345) & 0x7fffffff;
+}
+
+/// Lexicographic comparison of two byte lists. Returns negative if [a] < [b],
+/// zero if equal, positive if [a] > [b].
+int compare(Uint8List a, Uint8List b) {
+  final length = a.length < b.length ? a.length : b.length;
+  for (var i = 0; i < length; i++) {
+    final diff = a[i] - b[i];
+    if (diff != 0) return diff;
+  }
+  return a.length - b.length;
 }
 
 /// Calculate a 32 bit CRC for the given message

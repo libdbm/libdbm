@@ -282,23 +282,22 @@ class PersistentMap<K, V> implements Map<K, V> {
   }
 
   @override
-  void removeWhere(bool test(K key, V value)) {
+  void removeWhere(bool Function(K key, V value) test) {
     final remove = [];
     for (var e in entries) {
       if (test(e.key, e.value)) remove.add(e.key);
     }
-    ;
     for (var k in remove) {
       _dbm.remove(_keySerializer(k));
     }
   }
 
   @override
-  V update(K key, V ifPresent(V value), {V ifAbsent()?}) {
+  V update(K key, V Function(V value) ifPresent, {V Function()? ifAbsent}) {
     assert(key != null);
     final k = _keySerializer(key);
     final tmp = _dbm.get(k);
-    var ret;
+    V ret;
     if (tmp != null) {
       ret = ifPresent(_valueDeserializer(tmp));
       _dbm.put(k, _valueSerializer(ret));
@@ -311,7 +310,7 @@ class PersistentMap<K, V> implements Map<K, V> {
   }
 
   @override
-  void updateAll(V update(K key, V value)) {
+  void updateAll(V Function(K key, V value) update) {
     for (var key in keys.toList()) {
       final k = _keySerializer(key);
       final v = update(key, _valueDeserializer(_dbm.get(k)!));
@@ -332,7 +331,6 @@ class PersistentMap<K, V> implements Map<K, V> {
       final entry = convert(e.key, e.value);
       result[entry.key] = entry.value;
     }
-    ;
     return result;
   }
 }

@@ -17,6 +17,7 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
+        // ignore: empty_catches
       } catch (e) {
       } finally {}
     }
@@ -29,6 +30,7 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
+        // ignore: empty_catches
       } catch (e) {
       } finally {}
     }
@@ -79,11 +81,9 @@ void main() {
       for (var key in map.keys) {
         expect(keys.contains(key), isTrue);
       }
-      ;
       for (var value in map.values) {
         expect(values.contains(value), isTrue);
       }
-      ;
     });
     test('Test removing keys', () {
       map['foobar'] = 'qux';

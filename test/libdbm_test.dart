@@ -45,6 +45,7 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
+        // ignore: empty_catches
       } catch (e) {
       } finally {}
     }
@@ -54,6 +55,7 @@ void main() {
       try {
         file.deleteSync(recursive: true);
         // ignore: avoid_catches_without_on_clauses
+        // ignore: empty_catches
       } catch (e) {
       } finally {}
     }

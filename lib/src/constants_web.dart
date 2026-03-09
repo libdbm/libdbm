@@ -20,6 +20,12 @@ class DBMConstants {
   // Version List Block Magic Number - Web-safe
   static const int VERSION_LIST_MAGIC = 0x0e5510911570;
 
+  // B+Tree Node Magic Number - Web-safe
+  static const int BTREE_NODE_MAGIC = 0x0b7ee40de50da;
+
+  // B+Tree Meta Magic Number - Web-safe
+  static const int BTREE_META_MAGIC = 0x0b7ee4e7a50da;
+
   // Offset Mask - JavaScript MAX_SAFE_INTEGER (2^53 - 1)
   static const int OFFSET_MASK = 0x1fffffffffff;
 

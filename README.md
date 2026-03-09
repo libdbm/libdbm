@@ -1,157 +1,218 @@
-# Introduction
-This is __libdbm.dart__, a dart implementation of a `dbm` like database. It is extremely simple
-and extremely fast. For ease-of-use, an implementation of the dart `Map` is provided in addition 
-to a lower-level API. This `Map` interface can be used to persist any data given the appropriate
-serialization parameters. Like many other `dbm` based systems, it uses a hashing approach to 
-provide a very fast key-value store. It is purposefully intended to be very minimalistic and 
-to have no dependencies.
+# libdbm
 
-__This is an early preview__. There will be additional capabilities added, including the
-ability to maintain multiple indexes over the keys, and support for `IndexedDB` APIs.
+A fast, zero-dependency, disk-based key-value store for Dart.
+
+- **HashDBM** — hash table storage for fast unordered access
+- **BTreeDBM** — B+tree storage with sorted iteration, range queries, floor/ceiling
+- **VersionedHashDBM** — delta-overlay transactions with point-in-time snapshots
+- **PersistentMap** / **SortedPersistentMap** — familiar `Map<K, V>` API backed by disk
 
 ## Getting Started
-The API is deliberately extremely simple. In order to use this library, import
-the package, open a database, and store/fetch values. 
 
 ### PersistentMap
-Using the `PersistentMap` interface is very much like using a regular map, though the
-data is stored on disk as shown below. All the regular `Map` interfaces are supported
-with the exception of the `cast()` operation.
+
+The simplest way to use libdbm. Works like a regular `Map`, but data persists to disk.
 
 ```dart
 import 'dart:io';
 import 'package:libdbm/libdbm.dart';
 
 void main() {
-  final file = File('dummy.db');
-  var db = PersistentMap.withStringValue(file, create:true);
+  final file = File('my.db');
+  final db = PersistentMap.withStringValue(file, create: true);
 
-  // persistent
   db['foo'] = 'bar';
-  var result = db['foo'];
-  print('$result');
+  print(db['foo']); // bar
+
   db.remove('foo');
   db.close();
-
-  file.delete();
+  file.deleteSync();
 }
 ```
-The `PersistentMap` implementation will not overwrite an existing database, though it will
-create a new one if `create:true` is specified. 
 
-### Raw DBM/HashDBM
-This API is the lowest-level API, upon which `PersistentMap` is written. It is functionally
-very similar, but requires a little more plumbing to use.
+### HashDBM
+
+The low-level hash table API. Keys and values are `Uint8List`.
 
 ```dart
-import 'dart:io';
 import 'dart:convert' show utf8;
+import 'dart:io';
 import 'package:libdbm/libdbm.dart';
 
 void main() {
-  final key = utf8.encoder.convert('A key');
-  final value = utf8.encoder.convert('A value');
-
-  final file = File('dummy.db');
+  final file = File('hash.db');
   final db = HashDBM(file.openSync(mode: FileMode.write));
-  db.put(key, value);
-  var result = db.get(key);
-  print('${utf8.decode(result!.toList())}');
-  for (var i = db.entries(); i.moveNext();) {
-    print('${utf8.decode(i.current.key)}');
-    print('${utf8.decode(i.current.value)}');
-  }
-  db.remove(key);
-  db.get(key); // will return null
+
+  db.put(utf8.encode('key'), utf8.encode('value'));
+  final result = db.get(utf8.encode('key'));
+  print(utf8.decode(result!)); // value
+
   db.close();
-  file.delete();
+  file.deleteSync();
 }
 ```
-Note that to open an already closed database, use `FileMode.append` otherwise the old
-data will be overwritten (this is a simple way to truncate the database).
+
+Use `FileMode.append` to reopen an existing database without truncating.
+
+### BTreeDBM
+
+Sorted key-value store with range queries and ordered iteration.
+
+```dart
+import 'dart:convert' show utf8;
+import 'dart:io';
+import 'package:libdbm/libdbm.dart';
+
+void main() {
+  final file = File('btree.db');
+  final db = BTreeDBM(file.openSync(mode: FileMode.write), order: 64);
+
+  for (final name in ['delta', 'alpha', 'echo', 'bravo', 'charlie']) {
+    db.put(utf8.encode(name), utf8.encode('val_$name'));
+  }
+
+  // Sorted iteration
+  final iter = db.entries();
+  while (iter.moveNext()) {
+    print(utf8.decode(iter.current.key));
+  }
+  // alpha, bravo, charlie, delta, echo
+
+  // Range query [bravo, delta)
+  final range = db.range(
+      start: utf8.encode('bravo'), end: utf8.encode('delta'));
+  while (range.moveNext()) {
+    print(utf8.decode(range.current.key));
+  }
+  // bravo, charlie
+
+  // Floor and ceiling
+  print(utf8.decode(db.floor(utf8.encode('d'))!.key));   // charlie
+  print(utf8.decode(db.ceiling(utf8.encode('d'))!.key)); // delta
+
+  db.close();
+  file.deleteSync();
+}
+```
+
+Or use `SortedPersistentMap` for a typed `Map` interface:
+
+```dart
+final map = SortedPersistentMap.strings(file, create: true, order: 64);
+map['zebra'] = 'z';
+map['apple'] = 'a';
+for (final entry in map.entries) {
+  print('${entry.key} = ${entry.value}');
+}
+// apple = a, zebra = z
+map.close();
+```
+
+### VersionedHashDBM
+
+Transactional storage with version history and point-in-time queries.
+
+```dart
+import 'dart:convert' show utf8;
+import 'dart:io';
+import 'package:libdbm/libdbm.dart';
+
+void main() {
+  final file = File('versioned.db');
+  final db = VersionedHashDBM(file.openSync(mode: FileMode.write));
+
+  var tx = db.begin();
+  tx.put(utf8.encode('user'), utf8.encode('alice'));
+  tx.commit(); // version 1
+
+  tx = db.begin();
+  tx.put(utf8.encode('user'), utf8.encode('bob'));
+  tx.commit(); // version 2
+
+  // Point-in-time query
+  final v1 = db.at(1);
+  print(utf8.decode(v1.get(utf8.encode('user'))!)); // alice
+
+  // Merge and flatten
+  db.flatten();
+  db.close();
+  file.deleteSync();
+}
+```
 
 ## Performance
 
-Benchmarks are notoriously difficult, but as a general guideline, `libdbm` hash storage is
-capable of reading and writing 1000s of key-value pairs per second. The following numbers are
-taken from the test suite for 10,000 pairs.
+HashDBM with 50,000 entries (flush=false, 10007 buckets):
 
-| buckets | op     | time           |
-|:-------:|:------:|:--------------:|
-| 103     | insert | 0:00:05.483791 |
-| 103     | fetch  | 0:00:02.668405 |
-| 1009    | insert | 0:00:03.275287 |
-| 1009    | fetch: | 0:00:01.393490 |
-| 10007   | insert | 0:00:00.371533 |
-| 10007   | fetch  | 0:00:00.126720 |
-| 100003  | insert | 0:00:00.126404 |
-| 100003  | fetch  | 0:00:00.059652 |
+| Operation | Time | Per-op |
+|:----------|:-----|:-------|
+| Insert | 0.54s | 10.8 µs |
+| Random read | 0.37s | 7.5 µs |
+| Overwrite | 0.47s | 9.5 µs |
+| Delete 25K | 0.16s | 6.6 µs |
+| Iteration | 0.03s | 1.1 µs |
 
-As can be seen, one of the main factors in performance is how large the internal hash table is.
-This is persisted to external storage when `flush()` or `close()` is called, and will generally
-consume `16*num` bytes. As a general rule, having this be a largish prime number is good.
+BTreeDBM with 50,000 entries (order=128, flush=false):
 
-Other major factors are whether `flush` is set, which will force memory-based data structures to
-disk whenever they are modified. It is also possible to add a CRC check to records, which will 
-roughly halve the throughput (i.e. operations will take twice as long);
+| Operation | Time | Per-op |
+|:----------|:-----|:-------|
+| Insert | 0.54s | 10.9 µs |
+| Random read | 0.16s | 3.2 µs |
+| Range query (10K) | 0.8ms | 0.1 µs |
+| Sorted iteration | 3.6ms | 0.1 µs |
 
-## Space and memory usage
+Key factors affecting performance:
+- **Hash table size** (buckets) — use a large prime for HashDBM
+- **B+tree order** — higher order means fewer levels but larger nodes
+- **flush mode** — `flush=true` is safest but slower (~5x)
+- **CRC checking** — optional, roughly halves throughput
 
-The database file format has some fixed and dynamic sized overheads. As a general rule, the 
-static overhead is < 1k. The dynamic overhead is whatever size is needed for the hash table and
-memory pool (roughly 16 bytes per entry each), and then a per-record overhead of about 32 bytes, and
-records are aligned to 128 byte boundaries. As such, the overhead for storing many tiny values will
-be fairly high, so it is better to aggregate such values into a single record. Conversely the overhead
-for storing largish values (such as text or JSON data) will be relatively low.
+## Architecture
+
+Layered design with no runtime dependencies:
+
+1. **I/O layer** — `Pointer`, `Block`, `PointerBlock` over `RandomAccessFile`
+2. **Memory pool** — block allocator with 128-byte alignment and free-list merging
+3. **Hash record pool** — hash table with separate chaining
+4. **HashDBM** — hash-based `DBM` implementation
+5. **BTreeDBM** — B+tree layered over HashDBM for sorted access
+6. **PersistentMap** / **SortedPersistentMap** — typed `Map` wrappers
 
 ## Limitations
 
-The biggest current limitations are related to robustness. The library doesn't (yet) support
-transactions and while care has been taken to ensure reliability, the library doesn't use a WAL
-so in extreme cases, there is a small chance of corruption. The best way to mitigate this
-is to have `flush` turned on. Further tests need to be/will be written to handle bad input etc.
-but the library is well tested and is used in production.
+- No WAL or full transaction support for HashDBM (use `flush=true` for safety)
+- Hash table size is fixed at creation time
+- `PersistentMap` does not support `cast()`
 
-Currently, the hash table size is fixed, though the file format supports rehashing/reallocating the
-hash table. In the future, this capability will be used to optimize performance automatically.
-
-## Planned Enhancements
-
-* Versioning of values so that `n` previous values will (optionally) be kept. This will probably
-  be done by implementing pointer versioning.
-* Transaction support, which will basically buffer pointer updates and then write out atomically.
-  This will be relatively simple with pointer versioning implemented.
-* An extreme form of versioning will be purely append-only behavior.
-* Index to support ordered traversal and simple queries. Probably both `btree` and `splay-tree` indexes.
-* `IndexDB` API support.
-* Maybe implement an STM server.
-
-## Exposed API
-
-The interface to the underlying storage engine is basically that of a simple map from
-`Uint8List` to `Uint8List`.
+## API
 
 ```dart
 abstract class DBM {
   Uint8List? get(Uint8List key);
-  Uint8List? remove(Uint8List key);
   Uint8List? put(Uint8List key, Uint8List value);
   Uint8List putIfAbsent(Uint8List key, Uint8List value);
-
-  Iterator<MapEntry<Uint8List,Uint8List>> entries();
-
+  Uint8List? remove(Uint8List key);
+  Iterator<MapEntry<Uint8List, Uint8List>> entries();
+  int count();
+  int size();
   DateTime modified();
   int version();
-  int size();
-  int count();
   void clear();
+  int compact();
   void flush();
   void close();
 }
-```
-This API is expected to be stable over time, with enhancements being additive.
 
-### Licence
+abstract class SortedDBM implements DBM {
+  MapEntry<Uint8List, Uint8List>? first();
+  MapEntry<Uint8List, Uint8List>? last();
+  Iterator<MapEntry<Uint8List, Uint8List>> range({Uint8List? start, Uint8List? end});
+  MapEntry<Uint8List, Uint8List>? floor(Uint8List key);
+  MapEntry<Uint8List, Uint8List>? ceiling(Uint8List key);
+}
+```
+
+## Licence
 
 ```
 Copyright 2021 Gavin Nicol

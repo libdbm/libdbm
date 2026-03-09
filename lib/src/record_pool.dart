@@ -31,6 +31,10 @@ abstract class RecordPool {
   // ignore: avoid_positional_boolean_parameters
   Record? put(Uint8List key, final Uint8List value, bool overwrite);
 
+  /// Find the record for the given key, unlink it from the pool, free its
+  /// storage, and return it. Returns null if the key is not found.
+  Record? remove(Uint8List key);
+
   /// Get an iterator over all records
   Iterator<MapEntry<Uint8List, Uint8List>> entries();
 }
