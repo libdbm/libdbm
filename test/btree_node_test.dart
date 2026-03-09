@@ -78,8 +78,7 @@ void main() {
     test('magic validation on corrupt data', () {
       final buffer = Uint8List(32);
       // No valid magic
-      expect(
-          () => LeafNode.decode(1, buffer), throwsA(isA<StateError>()));
+      expect(() => LeafNode.decode(1, buffer), throwsA(isA<StateError>()));
     });
   });
 
@@ -126,8 +125,7 @@ void main() {
 
     test('magic validation on corrupt data', () {
       final buffer = Uint8List(32);
-      expect(
-          () => InternalNode.decode(1, buffer), throwsA(isA<StateError>()));
+      expect(() => InternalNode.decode(1, buffer), throwsA(isA<StateError>()));
     });
   });
 
@@ -138,8 +136,12 @@ void main() {
     });
 
     test('detects internal nodes', () {
-      final internal =
-          InternalNode(1, [Uint8List.fromList([1])], [10, 20]);
+      final internal = InternalNode(1, [
+        Uint8List.fromList([1])
+      ], [
+        10,
+        20
+      ]);
       expect(isLeaf(internal.encode()), isFalse);
     });
   });

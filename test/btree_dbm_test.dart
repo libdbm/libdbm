@@ -222,30 +222,23 @@ void main() {
     test('floor and ceiling', () {
       final db = BTreeDBM(file.openSync(mode: FileMode.write), order: 8);
       for (var i = 0; i < 10; i++) {
-        db.put(_key('key${(i * 10).toString().padLeft(3, '0')}'),
-            _val('v$i'));
+        db.put(_key('key${(i * 10).toString().padLeft(3, '0')}'), _val('v$i'));
       }
 
       // Exact match.
-      expect(
-          _str(db.floor(_key('key050'))!.key), equals('key050'));
-      expect(
-          _str(db.ceiling(_key('key050'))!.key), equals('key050'));
+      expect(_str(db.floor(_key('key050'))!.key), equals('key050'));
+      expect(_str(db.ceiling(_key('key050'))!.key), equals('key050'));
 
       // Between keys.
-      expect(
-          _str(db.floor(_key('key055'))!.key), equals('key050'));
-      expect(
-          _str(db.ceiling(_key('key055'))!.key), equals('key060'));
+      expect(_str(db.floor(_key('key055'))!.key), equals('key050'));
+      expect(_str(db.ceiling(_key('key055'))!.key), equals('key060'));
 
       // Before all keys.
       expect(db.floor(_key('a')), isNull);
-      expect(
-          _str(db.ceiling(_key('a'))!.key), equals('key000'));
+      expect(_str(db.ceiling(_key('a'))!.key), equals('key000'));
 
       // After all keys.
-      expect(
-          _str(db.floor(_key('z'))!.key), equals('key090'));
+      expect(_str(db.floor(_key('z'))!.key), equals('key090'));
       expect(db.ceiling(_key('z')), isNull);
 
       db.close();
@@ -254,8 +247,7 @@ void main() {
     test('range bounded', () {
       final db = BTreeDBM(file.openSync(mode: FileMode.write), order: 8);
       for (var i = 0; i < 100; i++) {
-        db.put(
-            _key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
+        db.put(_key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
       }
 
       final result = <String>[];
@@ -272,8 +264,7 @@ void main() {
     test('range unbounded start', () {
       final db = BTreeDBM(file.openSync(mode: FileMode.write), order: 8);
       for (var i = 0; i < 20; i++) {
-        db.put(
-            _key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
+        db.put(_key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
       }
 
       final result = <String>[];
@@ -288,8 +279,7 @@ void main() {
     test('range unbounded end', () {
       final db = BTreeDBM(file.openSync(mode: FileMode.write), order: 8);
       for (var i = 0; i < 20; i++) {
-        db.put(
-            _key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
+        db.put(_key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
       }
 
       final result = <String>[];
@@ -399,8 +389,8 @@ void main() {
     });
 
     test('wrap with VersionedHashDBM', () {
-      final vdb = VersionedHashDBM(file.openSync(mode: FileMode.write),
-          buckets: 1009);
+      final vdb =
+          VersionedHashDBM(file.openSync(mode: FileMode.write), buckets: 1009);
       final db = BTreeDBM.wrap(vdb, order: 8);
       db.put(_key('x'), _val('1'));
       db.put(_key('y'), _val('2'));
@@ -458,8 +448,8 @@ void main() {
         s.reset();
         s.start();
         count = 0;
-        final range = db.range(
-            start: _key('key020000'), end: _key('key030000'));
+        final range =
+            db.range(start: _key('key020000'), end: _key('key030000'));
         while (range.moveNext()) {
           count++;
         }
@@ -501,8 +491,7 @@ void main() {
 
       // HashDBM baseline
       if (file.existsSync()) file.deleteSync();
-      final hash = HashDBM(file.openSync(mode: FileMode.write),
-          flush: false);
+      final hash = HashDBM(file.openSync(mode: FileMode.write), flush: false);
       s.start();
       for (var i = 0; i < n; i++) {
         final padded = i.toString().padLeft(6, '0');
@@ -578,8 +567,7 @@ void main() {
     test('compact rebuilds tree', () {
       final db = BTreeDBM(file.openSync(mode: FileMode.write), order: 8);
       for (var i = 0; i < 100; i++) {
-        db.put(
-            _key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
+        db.put(_key('k${i.toString().padLeft(3, '0')}'), _val('v$i'));
       }
       // Delete half.
       for (var i = 0; i < 50; i++) {

@@ -49,8 +49,8 @@ class BTreeDBM implements SortedDBM {
   bool _dirty = false;
 
   // Reusable buffer for encoding node IDs as 8-byte keys.
-  final Uint8List _buf = Uint8List(8);
-  late final ByteData _bufView = ByteData.view(_buf.buffer);
+  final Uint8List _buffer = Uint8List(8);
+  late final ByteData _bufferView = ByteData.view(_buffer.buffer);
 
   // Reusable buffer for meta record serialization.
   final Uint8List _meta = Uint8List(_META_SIZE);
@@ -68,8 +68,7 @@ class BTreeDBM implements SortedDBM {
       final int cache = 256,
       final KeyComparator? comparator})
       : _store = HashDBM(file,
-            buckets: buckets, flush: flush,
-            crc: crc, cache: cache),
+            buckets: buckets, flush: flush, crc: crc, cache: cache),
         _owned = true,
         _compare = comparator ?? compare,
         _order = order,
@@ -91,14 +90,12 @@ class BTreeDBM implements SortedDBM {
     _load();
   }
 
-  // -- Meta record ----------------------------------------------------------
-
   /// Encode a node ID as 8 big-endian bytes. Returns the shared buffer
   /// — safe because HashDBM copies key bytes into its record block
   /// immediately and does not retain a reference to this buffer.
   Uint8List _key(final int value) {
-    _bufView.setUint64(0, value);
-    return _buf;
+    _bufferView.setUint64(0, value);
+    return _buffer;
   }
 
   void _load() {
@@ -135,8 +132,6 @@ class BTreeDBM implements SortedDBM {
 
   int _next() => ++_counter;
 
-  // -- Node cache -----------------------------------------------------------
-
   void _evict() {
     while (_cache.length > _capacity) {
       _cache.remove(_cache.keys.first);
@@ -152,8 +147,6 @@ class BTreeDBM implements SortedDBM {
   void _invalidate(final int id) {
     _cache.remove(id);
   }
-
-  // -- Node I/O -------------------------------------------------------------
 
   void _write(final int id, final Uint8List encoded) {
     _invalidate(id);
@@ -197,8 +190,6 @@ class BTreeDBM implements SortedDBM {
     return node;
   }
 
-  // -- Binary search --------------------------------------------------------
-
   /// Find insertion point in a sorted key list. Returns the index of the first
   /// key that is >= [target]. If all keys are less, returns keys.length.
   int _search(final List<Uint8List> keys, final Uint8List target) {
@@ -237,8 +228,6 @@ class BTreeDBM implements SortedDBM {
     return lo;
   }
 
-  // -- Batch mode -----------------------------------------------------------
-
   /// Enter batch mode for multi-write operations (splits, deletes with
   /// unlinking). Suppresses per-write flushing on HashDBM.
   void _begin() {
@@ -256,12 +245,9 @@ class BTreeDBM implements SortedDBM {
     _store.flush();
   }
 
-  // -- Traversal helpers ----------------------------------------------------
-
   /// Navigate from root to the leaf that should contain [key], recording
   /// the path of (internal node, child index) pairs.
-  LeafNode _traverse(final Uint8List key,
-      [final List<_PathEntry>? path]) {
+  LeafNode _traverse(final Uint8List key, [final List<_PathEntry>? path]) {
     var id = _root;
     for (var level = _height - 1; level > 0; level--) {
       final node = _internal(id);
@@ -294,8 +280,6 @@ class BTreeDBM implements SortedDBM {
     return _leaf(id);
   }
 
-  // -- DBM interface --------------------------------------------------------
-
   @override
   Uint8List? get(final Uint8List key) {
     if (_root == 0) return null;
@@ -310,8 +294,8 @@ class BTreeDBM implements SortedDBM {
     if (_root == 0) {
       // Empty tree — create first leaf as root.
       final id = _next();
-      final leaf = LeafNode(id, [Uint8List.fromList(key)],
-          [Uint8List.fromList(value)]);
+      final leaf =
+          LeafNode(id, [Uint8List.fromList(key)], [Uint8List.fromList(value)]);
       _write(id, leaf.encode());
       _root = id;
       _height = 1;
@@ -414,7 +398,6 @@ class BTreeDBM implements SortedDBM {
       _delete(leaf.id);
 
       if (path.isEmpty) {
-        // Was the root leaf.
         _root = 0;
         _height = 0;
         return old;
@@ -544,18 +527,13 @@ class BTreeDBM implements SortedDBM {
     }
   }
 
-  // -- Split helpers --------------------------------------------------------
-
   _Split _splitLeaf(final LeafNode leaf) {
     final mid = leaf.keys.length >> 1;
     final rid = _next();
 
-    final right = LeafNode(
-        rid,
-        List<Uint8List>.from(leaf.keys.sublist(mid)),
+    final right = LeafNode(rid, List<Uint8List>.from(leaf.keys.sublist(mid)),
         List<Uint8List>.from(leaf.values.sublist(mid)),
-        next: leaf.next,
-        previous: leaf.id);
+        next: leaf.next, previous: leaf.id);
 
     if (leaf.next != 0) {
       final old = _leaf(leaf.next);
@@ -591,8 +569,6 @@ class BTreeDBM implements SortedDBM {
 
     return _Split(promoted, rid);
   }
-
-  // -- SortedDBM interface --------------------------------------------------
 
   @override
   MapEntry<Uint8List, Uint8List>? first() {
@@ -658,17 +634,17 @@ class BTreeDBM implements SortedDBM {
   }
 }
 
-// -- Private helpers --------------------------------------------------------
-
 class _PathEntry {
   final InternalNode node;
   final int index;
+
   _PathEntry(this.node, this.index);
 }
 
 class _Split {
   final Uint8List key;
   final int right;
+
   _Split(this.key, this.right);
 }
 

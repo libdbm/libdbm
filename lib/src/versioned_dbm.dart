@@ -30,8 +30,6 @@ class VersionedHashDBM implements VersionedDBM {
     _store = VersionStore(_dbm.file, _dbm.pool, _dbm.header.list);
   }
 
-  // ---- VersionedDBM interface ----
-
   @override
   Transaction begin() {
     _guardReadonly();
@@ -110,8 +108,6 @@ class VersionedHashDBM implements VersionedDBM {
     _dbm.header.version = HashHeader.VERSION_PLAIN;
     _flush();
   }
-
-  // ---- DBM interface (routes through deltas) ----
 
   @override
   Uint8List? get(final Uint8List key) => resolve(key, _store.current);

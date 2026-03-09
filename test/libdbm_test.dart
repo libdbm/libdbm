@@ -60,7 +60,8 @@ void main() {
       } finally {}
     }
   });
-  test('Create and retrieve with timing', skip: 'Benchmark: run explicitly with --run-skipped', () {
+  test('Create and retrieve with timing',
+      skip: 'Benchmark: run explicitly with --run-skipped', () {
     final count = 1000000;
     for (var size in [100003, 1000003, 10000003]) {
       var db = HashDBM(file.openSync(mode: FileMode.write),
@@ -347,8 +348,7 @@ void main() {
     final raf = fresh.openSync(mode: FileMode.write);
     expect(
       () => HashDBM(raf, readonly: true),
-      throwsA(isA<DBMException>()
-          .having((final e) => e.code, 'code', 403)),
+      throwsA(isA<DBMException>().having((final e) => e.code, 'code', 403)),
     );
     raf.closeSync();
     if (fresh.existsSync()) fresh.deleteSync();

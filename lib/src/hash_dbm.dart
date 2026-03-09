@@ -182,8 +182,7 @@ class HashDBM implements DBM {
     if (existing) {
       _header.read(_file);
     } else if (readonly) {
-      throw DBMException(
-          403, 'Cannot open a new file in readonly mode');
+      throw DBMException(403, 'Cannot open a new file in readonly mode');
     }
     if (_header.magic != HashHeader.MAGIC) {
       throw DBMException(500, 'HashHeader magic mismatch: ${_header.magic}');
@@ -205,8 +204,8 @@ class HashDBM implements DBM {
         }
       } else {
         if (ver == HashHeader.VERSION_VERSIONED) {
-          throw DBMException(403,
-              'File is a versioned database; open with VersionedHashDBM');
+          throw DBMException(
+              403, 'File is a versioned database; open with VersionedHashDBM');
         } else if (ver != HashHeader.VERSION_PLAIN) {
           throw DBMException(
               500, 'Unknown format version: 0x${ver.toRadixString(16)}');

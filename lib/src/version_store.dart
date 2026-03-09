@@ -171,7 +171,8 @@ class VersionStore {
     final required = _ENTRIES_OFFSET + count * _ENTRY_SIZE;
     if (required > pointer.length) {
       throw DBMException(
-          500, 'VersionStore corrupt: $required bytes needed but '
+          500,
+          'VersionStore corrupt: $required bytes needed but '
           'block is ${pointer.length}');
     }
 

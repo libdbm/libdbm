@@ -144,8 +144,7 @@ class InternalNode {
   final Uint8List? _source;
 
   /// Constructor.
-  InternalNode(this.id, this.keys, this.children,
-      {Uint8List? source})
+  InternalNode(this.id, this.keys, this.children, {Uint8List? source})
       : _source = source;
 
   /// Serialize this internal node to bytes.

@@ -110,14 +110,12 @@ class InstrumentedFile implements RandomAccessFile {
           final int end = -1]) =>
       _inner.lockSync(mode, start, end);
   @override
-  void unlockSync(
-          [final int start = 0, final int end = -1]) =>
+  void unlockSync([final int start = 0, final int end = -1]) =>
       _inner.unlockSync(start, end);
   @override
   void truncateSync(final int length) => _inner.truncateSync(length);
   @override
-  int writeByteSync(final int value) =>
-      _inner.writeByteSync(value);
+  int writeByteSync(final int value) => _inner.writeByteSync(value);
   @override
   void writeStringSync(final String string,
           {final Encoding encoding = systemEncoding}) =>
@@ -153,8 +151,7 @@ class InstrumentedFile implements RandomAccessFile {
   Future<RandomAccessFile> truncate(final int length) =>
       _inner.truncate(length);
   @override
-  Future<RandomAccessFile> unlock(
-          [final int start = 0, final int end = -1]) =>
+  Future<RandomAccessFile> unlock([final int start = 0, final int end = -1]) =>
       _inner.unlock(start, end);
   @override
   Future<RandomAccessFile> writeByte(final int value) =>
@@ -171,10 +168,8 @@ class InstrumentedFile implements RandomAccessFile {
 
 // ─── Helpers ───────────────────────────────────────────────────────
 
-Uint8List key(final String value) =>
-    Uint8List.fromList(utf8.encode(value));
-Uint8List val(final String value) =>
-    Uint8List.fromList(utf8.encode(value));
+Uint8List key(final String value) => Uint8List.fromList(utf8.encode(value));
+Uint8List val(final String value) => Uint8List.fromList(utf8.encode(value));
 
 String padded(final int i, [final int width = 6]) =>
     i.toString().padLeft(width, '0');
@@ -185,8 +180,7 @@ void header(final String title) {
   print('${"=" * 60}\n');
 }
 
-void result(final String label, final int ops,
-    final Duration elapsed) {
+void result(final String label, final int ops, final Duration elapsed) {
   final us = elapsed.inMicroseconds;
   final per = ops > 0 ? (us / ops).toStringAsFixed(1) : '0';
   print('  $label: $elapsed '
@@ -315,8 +309,7 @@ void profileBTree(final int n, final int order) {
   final file = File('profile_btree.bin');
   if (file.existsSync()) file.deleteSync();
   final s = Stopwatch();
-  final raf = InstrumentedFile(
-      file.openSync(mode: FileMode.write));
+  final raf = InstrumentedFile(file.openSync(mode: FileMode.write));
   final db = BTreeDBM(raf, order: order, flush: false);
 
   // Sequential insert
@@ -367,8 +360,7 @@ void profileBTree(final int n, final int order) {
     ..reset()
     ..start();
   count = 0;
-  final range = db.range(
-      start: key('key010000'), end: key('key020000'));
+  final range = db.range(start: key('key010000'), end: key('key020000'));
   while (range.moveNext()) {
     count++;
   }
@@ -479,10 +471,8 @@ void microBenchmarks(final int n) {
   result('matches() 9 bytes (equal)', n, s.elapsed);
 
   // 6. LeafNode encode/decode
-  final keys = List.generate(
-      64, (final i) => key('key${padded(i)}'));
-  final values = List.generate(
-      64, (final i) => val('val${padded(i)}'));
+  final keys = List.generate(64, (final i) => key('key${padded(i)}'));
+  final values = List.generate(64, (final i) => val('val${padded(i)}'));
   final leaf = LeafNode(1, keys, values, next: 2, previous: 0);
   s
     ..reset()
@@ -492,8 +482,11 @@ void microBenchmarks(final int n) {
     encoded = leaf.encode();
   }
   s.stop();
-  result('LeafNode.encode() (64 entries, '
-      '${encoded.length}B)', n, s.elapsed);
+  result(
+      'LeafNode.encode() (64 entries, '
+      '${encoded.length}B)',
+      n,
+      s.elapsed);
 
   s
     ..reset()
@@ -505,8 +498,7 @@ void microBenchmarks(final int n) {
   result('LeafNode.decode() (64 entries)', n, s.elapsed);
 
   // 7. InternalNode encode/decode
-  final ikeys = List.generate(
-      64, (final i) => key('key${padded(i)}'));
+  final ikeys = List.generate(64, (final i) => key('key${padded(i)}'));
   final children = List.generate(65, (final i) => i + 1);
   final internal = InternalNode(1, ikeys, children);
   s
@@ -517,8 +509,11 @@ void microBenchmarks(final int n) {
     iencoded = internal.encode();
   }
   s.stop();
-  result('InternalNode.encode() (64 keys, '
-      '${iencoded.length}B)', n, s.elapsed);
+  result(
+      'InternalNode.encode() (64 keys, '
+      '${iencoded.length}B)',
+      n,
+      s.elapsed);
 
   s
     ..reset()
@@ -659,8 +654,7 @@ void putBreakdown(final int n) {
   final s = Stopwatch();
 
   // Measure put with instrumented file
-  final raf = InstrumentedFile(
-      file.openSync(mode: FileMode.write));
+  final raf = InstrumentedFile(file.openSync(mode: FileMode.write));
   final db = HashDBM(raf, flush: false);
 
   // Insert n keys, measure total
@@ -711,8 +705,7 @@ void btreeDecodeProfile(final int n) {
   header('BTreeDBM decode cost analysis (n=$n)');
   final file = File('profile_decode.bin');
   if (file.existsSync()) file.deleteSync();
-  final raf = InstrumentedFile(
-      file.openSync(mode: FileMode.write));
+  final raf = InstrumentedFile(file.openSync(mode: FileMode.write));
   final db = BTreeDBM(raf, order: 128, flush: false);
 
   // Insert n keys
@@ -746,8 +739,7 @@ void btreeDecodeProfile(final int n) {
       '(${(bytes / reads).round()} avg/read)');
   print('    File I/O:    ${readTime.inMicroseconds}us '
       '(${(readTime.inMicroseconds / n).toStringAsFixed(1)}us/op)');
-  final cpu = total.inMicroseconds -
-      readTime.inMicroseconds;
+  final cpu = total.inMicroseconds - readTime.inMicroseconds;
   print('    CPU (decode+search): ${cpu}us '
       '(${(cpu / n).toStringAsFixed(1)}us/op)');
 

@@ -29,8 +29,8 @@ void main() {
 
   // Range query.
   print('\nRange [bravo, delta):');
-  final range = db.range(
-      start: utf8.encode('bravo'), end: utf8.encode('delta'));
+  final range =
+      db.range(start: utf8.encode('bravo'), end: utf8.encode('delta'));
   while (range.moveNext()) {
     print('  ${utf8.decode(range.current.key)}');
   }

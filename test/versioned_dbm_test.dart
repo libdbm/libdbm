@@ -560,8 +560,7 @@ void main() {
       file = File(migrationPath).openSync(mode: FileMode.append);
       expect(
         () => HashDBM(file, buckets: 1009),
-        throwsA(isA<DBMException>().having(
-            (final e) => e.code, 'code', 403)),
+        throwsA(isA<DBMException>().having((final e) => e.code, 'code', 403)),
       );
       file.closeSync();
     });

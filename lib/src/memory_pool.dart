@@ -174,8 +174,7 @@ class MemoryPool {
     }
 
     // Merge with left neighbour
-    if (lo > 0 &&
-        _pointers[lo - 1].end == _pointers[lo].start - 1) {
+    if (lo > 0 && _pointers[lo - 1].end == _pointers[lo].start - 1) {
       final a = _pointers.removeAt(lo - 1);
       final b = _pointers.removeAt(lo - 1);
       _pointers.insert(lo - 1, Pointer(a.offset, a.length + b.length));

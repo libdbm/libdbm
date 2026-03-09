@@ -70,7 +70,9 @@ class DeltaBlock {
 
     for (var i = 0; i < n; i++) {
       if (offset + 8 > length) {
-        throw DBMException(500, 'DeltaBlock corrupt: entry header at $offset '
+        throw DBMException(
+            500,
+            'DeltaBlock corrupt: entry header at $offset '
             'exceeds block size $length');
       }
       final klen = _data.getUint32(offset);
@@ -78,7 +80,9 @@ class DeltaBlock {
       offset += 8;
 
       if (offset + klen > length) {
-        throw DBMException(500, 'DeltaBlock corrupt: key at $offset '
+        throw DBMException(
+            500,
+            'DeltaBlock corrupt: key at $offset '
             'exceeds block size $length');
       }
       final key = Uint8List.fromList(buffer.sublist(offset, offset + klen));
@@ -88,7 +92,9 @@ class DeltaBlock {
         result[BytesKey(key)] = null;
       } else {
         if (offset + vlen > length) {
-          throw DBMException(500, 'DeltaBlock corrupt: value at $offset '
+          throw DBMException(
+              500,
+              'DeltaBlock corrupt: value at $offset '
               'exceeds block size $length');
         }
         final value = Uint8List.fromList(buffer.sublist(offset, offset + vlen));
@@ -109,7 +115,9 @@ class DeltaBlock {
 
     for (var i = 0; i < n; i++) {
       if (offset + 8 > length) {
-        throw DBMException(500, 'DeltaBlock corrupt: entry header at $offset '
+        throw DBMException(
+            500,
+            'DeltaBlock corrupt: entry header at $offset '
             'exceeds block size $length');
       }
       final klen = _data.getUint32(offset);
@@ -117,7 +125,9 @@ class DeltaBlock {
       offset += 8;
 
       if (offset + klen > length) {
-        throw DBMException(500, 'DeltaBlock corrupt: key at $offset '
+        throw DBMException(
+            500,
+            'DeltaBlock corrupt: key at $offset '
             'exceeds block size $length');
       }
       final k = buffer.sublist(offset, offset + klen);
@@ -126,7 +136,9 @@ class DeltaBlock {
       if (matches(key, k)) {
         if (vlen == TOMBSTONE_MARKER) return tombstone;
         if (offset + vlen > length) {
-          throw DBMException(500, 'DeltaBlock corrupt: value at $offset '
+          throw DBMException(
+              500,
+              'DeltaBlock corrupt: value at $offset '
               'exceeds block size $length');
         }
         return Uint8List.fromList(buffer.sublist(offset, offset + vlen));

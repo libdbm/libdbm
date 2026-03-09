@@ -164,8 +164,7 @@ void main() {
       s.reset();
       s.start();
       count = 0;
-      for (final _ in map.range(
-          start: 'key010000', end: 'key015000')) {
+      for (final _ in map.range(start: 'key010000', end: 'key015000')) {
         count++;
       }
       s.stop();

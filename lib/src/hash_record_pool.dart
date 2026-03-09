@@ -347,8 +347,7 @@ class HashRecordPool implements RecordPool {
     while (ptr.isNotEmpty) {
       var current = _fetch(_file, ptr);
       if (matches(current.key, key)) {
-        if (overwrite == false ||
-            matches(current.value, value)) {
+        if (overwrite == false || matches(current.value, value)) {
           return current;
         }
         // Capture old value and size before any overwrite.
