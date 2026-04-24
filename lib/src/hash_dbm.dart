@@ -329,7 +329,7 @@ class HashDBM implements DBM {
     if (record.isNew) {
       _header.numBytes += record.size;
       _header.numRecords += 1;
-      if (_flush) flush();
+      if (_flush && !batch) flush();
     }
     return record.value;
   }

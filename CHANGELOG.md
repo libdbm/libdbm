@@ -79,6 +79,14 @@
 * Improved: `put()` and `putIfAbsent()` eliminate redundant key lookups.
 * Improved: `MemoryPool.free()` uses binary-search insertion instead of full re-sort.
 
+## [0.4.1] - Write-path performance
+
+* Fixed: `putIfAbsent()` now honours `batch` mode, matching `put()` and `remove()`. Bulk `putIfAbsent` loops with `batch=true` are ~9x faster (from ~78 to ~9 us/op).
+* Improved: `MemoryPool` now tracks dirty slots and skips the free-list page write when nothing has changed. Sequential insert / overwrite / remove with `flush=true` are 20-30% faster.
+* Improved: `HashRecordPool.flush()` no longer double-writes bucket entries that were already persisted at the mutation site.
+* Improved: `crc32()` now uses a 256-entry lookup table (~8x faster than the per-bit loop), cutting per-op CRC cost on the `flush=true` hot path.
+* Added: `example/bench_writes.dart` — a focused write-path benchmark for regression tracking.
+
 ## [0.4.0] - B+tree, sorted maps, performance
 
 * Added `BTreeDBM` — disk-based B+tree with sorted iteration, range queries, floor/ceiling lookups.

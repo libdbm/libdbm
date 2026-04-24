@@ -55,17 +55,23 @@ int compare(Uint8List a, Uint8List b) {
   return a.length - b.length;
 }
 
-/// Calculate a 32 bit CRC for the given message
-int crc32(Uint8List message) {
-  int crc, mask;
-
-  crc = 0xffffffff;
-  for (var byte in message) {
-    crc = crc ^ byte;
-    for (var j = 7; j >= 0; j--) {
-      mask = -(crc & 1);
-      crc = (crc >> 1) ^ (0xedb88320 & mask);
+final List<int> _crc32Table = () {
+  final table = List<int>.filled(256, 0);
+  for (var i = 0; i < 256; i++) {
+    var c = i;
+    for (var k = 0; k < 8; k++) {
+      c = (c & 1) != 0 ? (0xedb88320 ^ (c >> 1)) : (c >> 1);
     }
+    table[i] = c;
+  }
+  return table;
+}();
+
+/// Calculate a 32 bit CRC for the given message
+int crc32(final Uint8List message) {
+  var crc = 0xffffffff;
+  for (var i = 0; i < message.length; i++) {
+    crc = _crc32Table[(crc ^ message[i]) & 0xff] ^ (crc >> 8);
   }
   return ~crc & 0xffffffff;
 }

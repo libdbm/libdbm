@@ -64,6 +64,15 @@ class MemoryPool {
   final RandomAccessFile _file;
   final _pointers = <Pointer>[];
 
+  // -1 when clean; otherwise the lowest slot index whose on-disk value may
+  // differ from [_pointers]. Mutations to the ordered free list always shift
+  // slots from some index to the end, so a single lower bound is enough.
+  int _firstDirty = -1;
+  // Number of slots last persisted to the page, used to NIL-out trailing
+  // entries when the list shrinks.
+  int _lastWrittenCount = 0;
+  bool _headerDirty = false;
+
   /// Create a memory pool
   MemoryPool(this._file, offset) : _header = MemoryPoolHeader(offset) {
     final length = _file.lengthSync();
@@ -81,6 +90,11 @@ class MemoryPool {
     if (_header.page.isNotEmpty) {
       _read();
     }
+    _lastWrittenCount = _pointers.length;
+  }
+
+  void _markDirty(final int from) {
+    if (_firstDirty == -1 || from < _firstDirty) _firstDirty = from;
   }
 
   /// Get the end of the header/memory pool
@@ -94,6 +108,10 @@ class MemoryPool {
 
   /// Remove all pointers and clear the pointer page
   void clear() {
+    if (_pointers.isNotEmpty || _header.page.isNotEmpty) {
+      _markDirty(0);
+      _headerDirty = true;
+    }
     _pointers.clear();
     _header.page = Pointer.NIL;
   }
@@ -122,6 +140,7 @@ class MemoryPool {
     }
 
     if (reclaimed > 0) {
+      _markDirty(_pointers.length);
       _file.truncateSync(length - reclaimed);
     }
 
@@ -137,6 +156,7 @@ class MemoryPool {
     for (var i = 0; i < _pointers.length; i++) {
       if (_pointers[i].length >= size) {
         var ptr = _pointers.removeAt(i);
+        _markDirty(i);
         // Split a big block to help with data reuse
         if (ptr.length - size > _SPLIT_THRESHOLD) {
           free(Pointer(ptr.offset + size, ptr.length - size));
@@ -164,6 +184,7 @@ class MemoryPool {
       }
     }
     _pointers.insert(lo, pointer);
+    _markDirty(lo);
 
     // Merge with right neighbour
     if (lo + 1 < _pointers.length &&
@@ -178,34 +199,69 @@ class MemoryPool {
       final a = _pointers.removeAt(lo - 1);
       final b = _pointers.removeAt(lo - 1);
       _pointers.insert(lo - 1, Pointer(a.offset, a.length + b.length));
+      _markDirty(lo - 1);
     }
   }
 
-  /// Flush everything out to disk
+  /// Flush everything out to disk. Skips I/O entirely when nothing has
+  /// mutated since the last flush, and otherwise writes only the slot range
+  /// that changed (plus the trailing NIL-out range when the list shrank).
   void _write() {
+    // A freshly (re)allocated page may land on disk bytes that previously
+    // held record data — those bytes must be overwritten with NIL in full,
+    // or `_read()` on reopen will resurrect garbage into the free list.
+    var fullRewrite = false;
+
     if (_header.page.isEmpty && _pointers.isNotEmpty) {
       final required = align(_pointers.length, 256) * Pointer.WIDTH;
       _header.page = allocate(required);
+      _headerDirty = true;
+      fullRewrite = true;
     }
 
     if (_header.page.isNotEmpty) {
       var block = PointerBlock(_header.page);
 
-      // If we need to allocate/reallocate the pointer block
+      // If we need to grow the pointer block, allocate a new page.
       if (block.count < _pointers.length) {
-        if (_header.page.isNotEmpty) free(_header.page);
+        free(_header.page);
         final required = align(_pointers.length, 256) * Pointer.WIDTH;
         _header.page = allocate(required);
+        _headerDirty = true;
         block = PointerBlock(_header.page);
+        fullRewrite = true;
       }
 
-      // Always overwrite the whole page so stale pointers are never persisted.
-      for (var i = 0; i < block.count; i++) {
-        block[i] = i < _pointers.length ? _pointers[i] : Pointer.NIL;
+      if (fullRewrite) {
+        for (var i = 0; i < block.count; i++) {
+          block[i] = i < _pointers.length ? _pointers[i] : Pointer.NIL;
+        }
+        block.write(_file);
+        _firstDirty = -1;
+        _lastWrittenCount = _pointers.length;
+      } else if (_firstDirty >= 0) {
+        final touched = _pointers.length > _lastWrittenCount
+            ? _pointers.length
+            : _lastWrittenCount;
+        final end = touched < block.count ? touched : block.count;
+        for (var i = _firstDirty; i < end; i++) {
+          block[i] = i < _pointers.length ? _pointers[i] : Pointer.NIL;
+        }
+        if (end > _firstDirty) {
+          final byteStart = _firstDirty * Pointer.WIDTH;
+          final byteEnd = end * Pointer.WIDTH;
+          _file.setPositionSync(_header.page.offset + byteStart);
+          _file.writeFromSync(block.buffer, byteStart, byteEnd);
+        }
+        _firstDirty = -1;
+        _lastWrittenCount = _pointers.length;
       }
-      block.write(_file);
     }
-    _header.write(_file);
+
+    if (_headerDirty) {
+      _header.write(_file);
+      _headerDirty = false;
+    }
   }
 
   /// read in the block of pointers.

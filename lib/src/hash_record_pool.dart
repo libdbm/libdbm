@@ -193,7 +193,7 @@ class HashRecordPool implements RecordPool {
   final MemoryPool _memoryPool;
   final bool _checkCRC;
   late final PointerBlock _buckets;
-  final _dirty = <int>{};
+  bool _headerDirty = false;
 
   /// Create a new record pool. [memoryPool] is used to actually allocate
   /// records
@@ -216,6 +216,7 @@ class HashRecordPool implements RecordPool {
       _header.page = _memoryPool.allocate(buckets * Pointer.WIDTH);
       _buckets = PointerBlock(_header.page);
       _buckets.write(_file);
+      _header.write(_file);
     } else {
       _buckets = PointerBlock(_header.page);
       _buckets.read(_file);
@@ -244,7 +245,6 @@ class HashRecordPool implements RecordPool {
         if (last == null) {
           // Head of the chain
           _buckets[bucket] = block.next;
-          _dirty.add(bucket);
           _buckets.writeAt(_file, bucket);
         } else {
           // Middle or end of the chain
@@ -270,7 +270,6 @@ class HashRecordPool implements RecordPool {
       if (matches(block.key, key)) {
         if (last == null) {
           _buckets[bucket] = block.next;
-          _dirty.add(bucket);
           _buckets.writeAt(_file, bucket);
         } else {
           last.next = block.next;
@@ -310,21 +309,18 @@ class HashRecordPool implements RecordPool {
         ptr = block.next;
       }
       _buckets[i] = Pointer.NIL;
-      _dirty.add(i);
     }
+    _buckets.write(_file);
   }
 
   @override
   void flush() {
-    _header.write(_file);
-    if (_dirty.length > _buckets.count ~/ 2) {
-      _buckets.write(_file);
-    } else {
-      for (final index in _dirty) {
-        _buckets.writeAt(_file, index);
-      }
+    if (_headerDirty) {
+      _header.write(_file);
+      _headerDirty = false;
     }
-    _dirty.clear();
+    // Bucket mutations are already persisted via writeAt() on every put /
+    // remove, so there's nothing further to do here.
   }
 
   RecordBlock _insertAtTail(Uint8List key, Uint8List value, bool overwrite) {
@@ -338,7 +334,6 @@ class HashRecordPool implements RecordPool {
       if (_checkCRC) ret.setCRC();
       ret.write(_file);
       _buckets[bucket] = ret.pointer;
-      _dirty.add(bucket);
       _buckets.writeAt(_file, bucket);
       return ret;
     }
@@ -378,7 +373,6 @@ class HashRecordPool implements RecordPool {
           if (_checkCRC) ret.setCRC();
           ret.write(_file);
           _buckets[bucket] = ret.pointer;
-          _dirty.add(bucket);
           _buckets.writeAt(_file, bucket);
         } else {
           // Middle of the chain.
